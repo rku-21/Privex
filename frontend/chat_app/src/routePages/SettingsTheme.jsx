@@ -2,7 +2,7 @@ import { THEMES } from "../constants/index.js";
 import { useThemeStore } from "../store/useThemeStore.js";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { Send } from "lucide-react";
-import "./styles/Settings.css"; 
+import "./styles/settings.css"; 
 
 const PREVIEW_MESSAGES = [
   { id: 1, content: "Hey! How's it going?", isSent: false },

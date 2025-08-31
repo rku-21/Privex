@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { Camera, Mail, User } from 'lucide-react';
 import BottomNavbar from "../components/bottomNav/BottomNavbar.jsx"
-import './styles/Profile.css'; // 
+import './styles/profile.css'; // 
 import { useState } from 'react';
 
 export const Profile = () => {
