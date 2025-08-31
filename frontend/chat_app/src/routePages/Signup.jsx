@@ -1,5 +1,5 @@
 import { useState } from "react";
-import styles from './styles/Signup.module.css';
+import styles from './styles/signup.module.css';
 import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
 import toast from "react-hot-toast";
