@@ -1,6 +1,6 @@
 import React from "react";
 import { useEffect } from "react";
-import "./styles/Home.css"; 
+import "./styles/home.css"; 
 import {Navbar} from  "../components/navbar/Navbar.jsx"
 import BottomNavbar from "../components/bottomNav/BottomNavbar.jsx"
 import { NoChatSelected } from "../components/NoChatSelected.jsx"; 
