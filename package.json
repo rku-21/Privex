@@ -1,0 +1,9 @@
+# Root package.json for Privex monorepo
+{
+  "name": "privex-monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend/chat_app",
+    "backend"
+  ]
+}

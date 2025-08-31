@@ -1,0 +1,7 @@
+# Ignore node_modules and environment files in all subfolders
+node_modules/
+.env
+frontend/chat_app/node_modules/
+frontend/chat_app/.env
+backend/node_modules/
+backend/.env
