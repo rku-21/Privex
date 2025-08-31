@@ -1,0 +1,152 @@
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #0f0c29, #24204e, #1b1b31) !important;
+       background-repeat:no-repeat ;
+    background-attachment: fixed ;
+    background-size: cover; 
+  min-height: 100vh;
+ 
+  
+}
+.full-container{
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  min-height: 100vh;
+  gap: 2rem;
+}
+
+.login-container {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 40px;
+  border-radius: 16px;
+
+  
+  box-shadow: 0 0 20px #8e44ad;
+  color: #fff;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+ 
+  justify-content: center;
+}
+
+.login-container h2 {
+  margin-bottom: 20px;
+  font-size: 1.75rem;
+  color: #e0b3ff;
+}
+
+form input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper span {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #ccc;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #8e44ad;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  color: white;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.3s ease;
+}
+
+button:hover {
+  background: #a66bbe;
+}
+
+.signup-link {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.signup-link a {
+  color: #d98aff;
+  text-decoration: none;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}
+
+
+@media only screen and (max-width: 768px) {
+  .full-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1.5rem 0.5rem;
+    min-height: 100vh;
+  }
+  .login-container {
+    padding: 24px 8px;
+    border-radius: 10px;
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    margin: 0 auto;
+  }
+  .auth-pattern {
+    display: none;
+  }
+  .login-container h2 {
+    font-size: 1.2rem;
+  }
+  form input {
+    padding: 12px;
+    font-size: 0.95rem;
+  }
+  .password-wrapper span {
+    font-size: 16px;
+  }
+  button {
+    padding: 12px;
+    font-size: 0.95rem;
+  }
+  .signup-link {
+    font-size: 12px;
+  }
+}
+.google-auth{
+    margin-top: -20px;
+}
+.auth-pattern{
+  margin-top:3rem;
+}
+
+
+
+

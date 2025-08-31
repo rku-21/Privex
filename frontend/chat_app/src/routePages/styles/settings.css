@@ -1,0 +1,92 @@
+.settings-container {
+  width: 100%;
+  max-width: 900px;
+
+  background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 0 1px #30363d;
+  padding: 30px;
+  border-radius: 10px;
+ 
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+}
+.upload-btn,
+.delete-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.upload-btn {
+  background: #0047ff;
+  color: #fff;
+}
+
+.delete-btn {
+  background: #e0e0e0;
+  color: #000;
+}
+
+.settings-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.full-width {
+  grid-column: span 2;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+textarea {
+  resize: none;
+}
+
+.with-button {
+  display: flex;
+  gap: 10px;
+}
+
+.with-button input {
+  flex: 1;
+}
+
+.with-button button {
+  padding: 8px 12px;
+  background-color: #0047ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.add-link-btn {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #0047ff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+.save-btn {
+  padding: 12px;
+  background-color: #0047ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}

@@ -1,0 +1,134 @@
+
+@media (max-width: 500px) {
+  .search-results {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 98vw;
+    max-width: 100vw;
+    min-width: 0;
+  }
+  .user-card {
+    min-width: 0;
+    max-width: 100vw;
+    padding: 10px 4px;
+    font-size: 0.95rem;
+  }
+  .user-card-avatar {
+    width: 48px;
+    height: 48px;
+  }
+}
+.Search-box { margin: auto;
+   position:sticky; 
+   top:1rem; z-index: 10000;
+    width: 80vw;
+    max-width: 800px; 
+    border-radius: 20px;
+    background-color: rgba(128, 128, 128, 0.278); margin-top: 1rem; padding: 5px;
+   }
+
+   .Search-box input { width: 100%; 
+    font-size:18px; 
+    border: none;
+    margin: 0; 
+    padding: 10px 10px 10px 40px;
+      border-radius: 20px;
+     height: 40px;
+     outline: none; background-color: transparent;
+    font-size: 1rem;
+ }
+ .search-icon { position: absolute;
+   top: 50%; 
+   left: 15px; 
+   transform: translateY(-50%);
+    color: gray; 
+    font-size: 1rem; 
+    pointer-events: none; 
+   }
+
+
+
+
+.search-results {
+  width: 80vw;
+  margin: auto;
+  max-width:1000px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  height:80vh;
+  overflow:auto;
+  scrollbar-width: none;  
+  -ms-overflow-style: none;
+  margin-top: 1.5rem;
+}
+
+.user-card {
+  background-color: #ffffff0a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+ 
+  max-height:260px;
+  border-radius: 16px;
+  padding: 20px 10px;
+  text-align: center;
+  transition: 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.user-card:hover {
+  background-color: #2a06424a;
+}
+
+.user-card-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+
+.user-card-name {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: white;
+}
+
+.card-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.card-buttons button {
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.view-btn {
+  background-color: #505b5b71;
+  color: white;
+}
+
+.add-btn {
+  background-color: #3f5f5f71;
+  color: white;
+}
+.add-btn:hover{
+   background-color: #3f5f5fb9;
+}
+
+
+
+
+
+
+
+
