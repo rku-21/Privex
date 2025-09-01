@@ -40,12 +40,13 @@ if(process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/chat_app/dist")));
   console.log('✅ Static files configured');
 
-  console.log('🔄 Setting up catch-all route for SPA...');
-  // FIXED: Changed from "/*" to "*"
-  // app.get("*", (req, res) => {
-  //   console.log('📤 Serving index.html for path:', req.path);
-  //   res.sendFile(path.join(__dirname, "../frontend/chat_app/dist/index.html"));
-  // });
+ console.log('🔄 Setting up catch-all route for SPA...');
+// Match everything EXCEPT /api routes
+app.get(/^(?!\/api).*/, (req, res) => {
+    console.log('📤 Serving index.html for path:', req.path);
+    res.sendFile(path.join(__dirname, "../frontend/chat_app/dist/index.html"));
+});
+console.log('✅ Catch-all route configured');
   console.log('✅ Catch-all route configured');
 } else {
   console.log('🛠️ Development environment detected');
