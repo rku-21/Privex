@@ -42,10 +42,10 @@ if(process.env.NODE_ENV === "production") {
 
   console.log('🔄 Setting up catch-all route for SPA...');
   // FIXED: Changed from "/*" to "*"
-  app.get("*", (req, res) => {
-    console.log('📤 Serving index.html for path:', req.path);
-    res.sendFile(path.join(__dirname, "../frontend/chat_app/dist/index.html"));
-  });
+  // app.get("*", (req, res) => {
+  //   console.log('📤 Serving index.html for path:', req.path);
+  //   res.sendFile(path.join(__dirname, "../frontend/chat_app/dist/index.html"));
+  // });
   console.log('✅ Catch-all route configured');
 } else {
   console.log('🛠️ Development environment detected');
