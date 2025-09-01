@@ -6,6 +6,8 @@ import cookieParser from 'cookie-parser';
 import { protectRoute } from './middleware/auth.protectRoute.js';
 import cors from "cors";
 import path from "path";
+console.log('Starting server...');
+console.log('Node version:', process.version);
 
 
 dotenv.config();
@@ -32,6 +34,10 @@ if(process.env.NODE_ENV==="production"){
     res.sendFile(path.join(__dirname,"../frontend/chat_app","dist","index.html"));
   })
 }
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+})
 
 
 
