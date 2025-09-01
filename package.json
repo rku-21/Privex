@@ -1,9 +1,30 @@
-
 {
-  "name": "privex-monorepo",
+  "name": "privex",
   "private": true,
   "workspaces": [
     "frontend/chat_app",
     "backend"
-  ]
+  ],
+  "version": "1.0.0",
+  "description": "This repository contains both the frontend and backend for the Privex chat application.",
+  "main": "index.js",
+ "scripts": {
+  "dev": "vite",
+  "build": "npm install --prefix backend && npm install --prefix frontend/chat_app && npm run build --prefix frontend/chat_app",
+  "start": "react-scripts start --host 0.0.0.0",
+  "lint": "eslint .",
+  "preview": "vite preview"
+},
+
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rku-21/Privex.git"
+  },
+  "author": "Rahul Kumar Upadhyay",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rku-21/Privex/issues"
+  },
+  "homepage": "https://github.com/rku-21/Privex#readme"
 }
