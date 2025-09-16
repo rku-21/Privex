@@ -1,21 +1,21 @@
 import { create } from 'zustand';
 import { axiosInstance } from '../lib/axios';
 import { io } from "socket.io-client";
-import { persist } from "zustand/middleware";
 import toast from 'react-hot-toast';
-import { Navigate } from 'react-router-dom';
-const BASE_URL = import.meta.env.MODE ==="development"?"http://localhost:5001":"/api";
+
+const BASE_URL = import.meta.env.MODE ==="development"?"http://localhost:5001":"/";
 
 export const useAuthStore = create((set, get) => ({
     authUser: null,
     isSigningUp: false,
     isLoginingUp: false,
     isUpdateingProfileUP: false,
-    isCheckingAuth: true,
+    isCheckingAuth:true,
     socket: null,
     onlineUsers: [],
     checkAuth: async () => {
         try {
+            set({ isCheckingAuth:true});
             
             const res = await axiosInstance.get("/auth/check");
             set({ authUser: res.data });
@@ -103,19 +103,17 @@ profile: async () => {
 
     connectSocket: () => {
         const {authUser}=get();
-        if(!authUser || get().socket?.connected) return;
-      const socket = io(BASE_URL, {
-        query: {
-            userId:authUser._id,
-        },
-      });
-      socket.connect();
-      set({socket:socket});
-     
-    socket.on("getOnlineUsers", (userIds)=>{
-        set({onlineUsers:userIds});
-    });
-       
+        if(!authUser || !authUser._id || get().socket?.connected) return;
+        const socket = io(BASE_URL, {
+            query: {
+                userId:authUser._id,
+            },
+        });
+        socket.connect();
+        set({socket:socket});
+        socket.on("getOnlineUsers", (userIds)=>{
+            set({onlineUsers:userIds});
+        });
     },
     disconnectSocket: () => {
     if (get().socket?.connected) get().socket.disconnect();

@@ -15,7 +15,11 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--bg-main);
   color: var(--text-primary);
- 
+}
+body.dark-mode {
+  background: linear-gradient(135deg, #18122B, #23213a, #1b1b31) !important;
+
+  color: #e0e0e0;
 }
 .parent {
   display: flex;
@@ -31,15 +35,22 @@ body {
 
 
 .home-container {
- background: linear-gradient(135deg, #0f0c29, #24204e, #1b1b31) !important;
- flex: 1;
+  background: linear-gradient(135deg, #0f0c29, #24204e, #1b1b31) !important;
+  flex: 1;
   display: flex;
-  overflow: hidden; 
+  overflow: hidden;
+}
+.dark-mode .home-container {
+  background: linear-gradient(135deg, #120e20, #13121f, #141425) !important;
+  /* box-shadow: 0 0 20px #8e44ad; */
+  border-radius: 16px;
+  color: #fff;
 }
 
 
 
 .sidebar {
+  
   
   max-width: 450px;
   width:30vw;

@@ -22,11 +22,12 @@ export const login = async(req, res) => {
         if(!ispasswordMatch){
             return res.status(400).json({message:"invalid credentials"});
         }
-        //agar user exist karta hai toh give me token 
+        //agar user exist karta hai toh give him token 
         const token=generateToken(user.id, res);
+       
 
         return res.status(200).json({
-            message: "Login successful",
+            message: "Login successfully",
             _id: user._id,
             email: user.email,
             fullname: user.fullname,

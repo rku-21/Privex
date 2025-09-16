@@ -29,6 +29,17 @@
 	box-sizing: border-box;
 }
 
+.dark-mode.friends-page-bg {
+	 background: linear-gradient(135deg, #120e20, #13121f, #141425) !important;
+}
+.dark-mode .user-card {
+	background-color: #23213a !important;
+	color: #e0e0e0;
+	box-shadow: 0 2px 8px #8e44ad33;
+}
+
+
+
 .friends-scroll-area {
 	width: 100vw;
 	max-width: 100vw;

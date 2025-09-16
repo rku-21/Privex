@@ -1,3 +1,20 @@
+/* Make all text white except .status and .status-dot */
+.profile-topbar,
+.profile-topbar-title,
+.profile-back-arrow,
+.profile-card,
+.profile-card *:not(.status):not(.status-dot) {
+  color: #fff !important;
+}
+.profile-header p,
+.profile-header h1,
+.info-value,
+.label,
+.account-info h2,
+.account-item span,
+.upload-text {
+  color: #fff !important;
+}
 body {
   background: linear-gradient(135deg, #0f0c29, #24204e, #1b1b31) !important;
   background-repeat: no-repeat;
@@ -12,27 +29,67 @@ html, body {
   padding: 0;
   
 }
-.profile-container {
-  width:min(850px, 95vw);
-  max-height:80vh;
-  margin: 0 auto;
-  
-}
-@media only screen and (max-width: 500px) {
-  .profile-container {
-    width:100vw;
-   
-   
-    max-width: 100vw;
 
+.profile-container {
+  width: min(850px, 95vw);
+  max-height: 80vh;
+  margin: 0 auto;
+}
+@media (max-width: 850px) {
+  .profile-container {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 0 0 0 !important;
+  }
+  .profile-card {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    min-height: 100vh !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 0.5rem 0.5rem 2rem 0.5rem !important;
+  }
+  .profile-bottom-nav {
+    display: none !important;
+  }
+  .profile-topbar {
+    display: flex;
+    align-items: center;
+    position: fixed;
     top: 0;
     left: 0;
-    transform: none;
-
-    border-radius: 0;
-    padding: 10px;
+    width: 100vw;
+    height: 3.2rem;
+    background: transparent;
+    z-index: 100;
+    box-shadow: none;
+    padding-left: 0.5rem;
+    font-family: inherit;
   }
-  
+  .dark-mode .profile-topbar {
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+  }
+  .profile-back-arrow {
+    margin-right: 1.1rem;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: #8e44ad;
+    display: flex;
+    align-items: center;
+    background: none;
+  }
+  .profile-topbar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #8e44ad;
+    letter-spacing: 0.01em;
+    background: none;
+  }
 }
 
 
@@ -182,8 +239,15 @@ html, body {
 .account-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid #30363d;
+}
+.account-item .status {
+  color: #3fb950 !important;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
 }
 
 .account-item:last-child {

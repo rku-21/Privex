@@ -20,7 +20,7 @@ export default function UnderConstruction() {
         Privex
       </motion.h1>
 
-      {/* Typing dots animation */}
+      
       <div className="flex space-x-2 mb-4">
         <span className="w-3 h-3 bg-white rounded-full animate-bounce"></span>
         <span className="w-3 h-3 bg-white rounded-full animate-bounce delay-200"></span>

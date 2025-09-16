@@ -2,50 +2,59 @@ import React from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { Camera, Mail, User } from 'lucide-react';
 import BottomNavbar from "../components/bottomNav/BottomNavbar.jsx"
+import { useNavigate } from 'react-router-dom';
 import './styles/profile.css'; // 
 import { useState } from 'react';
-
-export const Profile = () => {
+import './styles/profileImageModal.css';
+ export const Profile = () => {
+  const navigate = useNavigate();
   const { authUser, isUpdateingProfileUP, updateProfile } = useAuthStore();
-  const [img, setimg]=useState(null);
-
+  const [img, setimg] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const handleImageUpload = async (e) => {
-    const file=e.target.files[0];
+    const file = e.target.files[0];
     const reader = new FileReader();
-    reader.readAsDataURL(file); 
+    reader.readAsDataURL(file);
     reader.onload = async () => {
-     
-    const base64Image=reader.result;
-    setimg(base64Image);
+      const base64Image = reader.result;
+      setimg(base64Image);
+      await updateProfile({ profilePicture: base64Image });
+    };
+  };
 
-     await updateProfile({profilePicture:base64Image})
-    }
-    
-};
- return (
+  const handleAvatarClick = () => {
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+  };
+  return (
     <>
-   
+      {/* Topbar for mobile/laptop <850px */}
+      <div className="profile-topbar">
+        <span className="profile-back-arrow" onClick={() => navigate(-1)} title="Back" tabIndex={0}>
+          <i className="fa-solid fa-arrow-left"></i>
+        </span>
+        <span className="profile-topbar-title">Profile</span>
+      </div>
       <div className="profile-page">
         <div className="profile-container">
           <div className="profile-card">
-            <div className="profile-header">
-              <h1>Profile</h1>
-              <p>Your profile information</p>
-            </div>
-
             <div className="avatar-section">
               <div className="avatar-wrapper">
                 <img
-                  src={ img||authUser.profilePicture || '/avatar.png'}
+                  src={img || authUser.profilePicture || '/avatar.png'}
                   alt="Profile"
                   className="avatar-img"
+                  style={{ cursor: 'zoom-in' }}
+                  onClick={handleAvatarClick}
                 />
                 <label
                   htmlFor="avatar-upload"
                   className={`avatar-upload ${isUpdateingProfileUP ? 'disabled' : ''}`}
                 >
-                  
                   <Camera className="camera-icon" />
                   <input
                     type="file"
@@ -60,7 +69,6 @@ export const Profile = () => {
                 {isUpdateingProfileUP ? 'Uploading...' :authUser.fullname}
               </p>
             </div>
-
             <div className="info-section">
               <div className="info-item">
                 <div className="label">
@@ -69,7 +77,6 @@ export const Profile = () => {
                 </div>
                 <p className="info-value">{authUser?.fullname}</p>
               </div>
-
               <div className="info-item">
                 <div className="label">
                   <Mail size={16} />
@@ -78,7 +85,6 @@ export const Profile = () => {
                 <p className="info-value">{authUser?.email}</p>
               </div>
             </div>
-
             <div className="account-info">
               <h2>Account Information</h2>
               <div className="account-details">
@@ -95,9 +101,19 @@ export const Profile = () => {
           </div>
         </div>
       </div>
-      <div className='nav-parent'>
-      <BottomNavbar/>
+      {/* Hide BottomNavbar for width <850px */}
+      <div className='nav-parent profile-bottom-nav'>
+        <BottomNavbar />
       </div>
+      {showModal && (
+        <div className="profile-image-modal-bg" onClick={closeModal}>
+          <img
+            src={img || authUser.profilePicture || '/avatar.png'}
+            alt="Profile Large"
+            className="profile-image-modal-img"
+          />
+        </div>
+      )}
     </>
   );
 };

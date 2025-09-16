@@ -1,14 +1,17 @@
 
 
+
 import React, { useEffect } from 'react';
 import BottomNavbar from '../../components/bottomNav/BottomNavbar';
 import { Navbar } from '../../components/navbar/Navbar';
 import { useChatStore } from '../../store/useChatStore';
 import toast from 'react-hot-toast';
 import './friends.css';
+import { useThemeStore } from '../../store/useThemeStore';
 
 export const Friends = () => {
   const { getFriends, friends, removingFriendRequest } = useChatStore();
+  const { theme } = useThemeStore();
 
   useEffect(() => {
     getFriends();
@@ -25,7 +28,7 @@ export const Friends = () => {
   };
 
   return (
-    <div className="friends-page-bg">
+    <div className={`friends-page-bg${theme === "dark" ? " dark-mode" : ""}`}>
       <div className="friends-navbar-fixed">
         <Navbar />
       </div>

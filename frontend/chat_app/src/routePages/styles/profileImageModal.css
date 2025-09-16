@@ -1,0 +1,32 @@
+.profile-image-modal-bg {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s;
+}
+.profile-image-modal-img {
+  max-width: 90vw;
+  max-height: 80vh;
+  border-radius: 16px;
+  box-shadow: 0 4px 32px #000a, 0 0 0 4px #fff2;
+  background: #18122B;
+  object-fit: contain;
+  transition: transform 0.2s;
+}
+.profile-image-modal-bg:active {
+  cursor: zoom-out;
+}
+@media (max-width: 600px) {
+  .profile-image-modal-img {
+    max-width: 98vw;
+    max-height: 60vh;
+  }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

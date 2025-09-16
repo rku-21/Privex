@@ -8,19 +8,14 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Loding } from '../../Skeleton/loding';
 import BottomNavbar from '../../components/bottomNav/BottomNavbar';
-
-
-
-
 export const Search = () => {
-  const {authUser } = useAuthStore();
+const {authUser } = useAuthStore();
 
- const {getAllUsers,Users,isUsersLoding,SendingFriendRequest,removingFriendRequest,  getsendedRequests,getPendingRequests,friends,friendRequests, getFriends}=useChatStore();
-const [searchQuery, setSearchQuery] = useState("");
-const [filteredUsers, setFilteredUsers] = useState([]);
+  const {getAllUsers,Users,isUsersLoding,SendingFriendRequest,removingFriendRequest,  getsendedRequests,getPendingRequests,friends,friendRequests, getFriends}=useChatStore();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState([]);
 
-
-const currentUser=authUser;
+  const currentUser=authUser;
 
 useEffect(() => {
   getAllUsers();

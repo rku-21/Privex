@@ -6,6 +6,18 @@
   z-index: 999;
 }
 
+.dark-mode .bottom-navbar {
+   background: linear-gradient(135deg, #120e20, #13121f, #141425) !important;
+  /* box-shadow: 0 -2px 10px #8e44ad; */
+  border-top: 1px solid #2d1846;
+}
+.dark-mode .navbar-list li {
+  color: #e0e0e0;
+}
+.dark-mode .navbar-list li:hover {
+  color: #d98aff;
+}
+
 .bottom-navbar {
   height: 60px; 
   flex-shrink: 0;

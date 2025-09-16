@@ -1,3 +1,63 @@
+/* Floating label effect */
+.floating-label-group {
+  position: relative;
+  margin-bottom: 0.35rem;
+}
+.floating-input {
+  width: 100%;
+  padding: 10px 12px 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 16px;
+  box-sizing: border-box;
+  outline: none;
+  margin: 0;
+}
+/* Floating label sits just above input, not far above. Placeholder hidden on focus. */
+.floating-label {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  font-size: 1rem;
+  pointer-events: none;
+  background: transparent;
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  padding: 0 4px;
+  opacity: 1;
+  z-index: 2;
+}
+.floating-input:focus::placeholder {
+  color: transparent;
+}
+.floating-input:focus + .floating-label,
+.floating-input:not(:placeholder-shown) + .floating-label {
+  top: 0px;
+  left: 12px;
+  font-size: 0.93rem;
+  color:white;
+  background: rgba(36, 32, 78, 0);
+  padding: 0 4px;
+  border-radius: 4px;
+  opacity: 1;
+}
+/* Password fields row for signup */
+.signup-password-row {
+  display: flex;
+  gap: 1.2rem;
+}
+.signup-password-row > div {
+  flex: 1 1 0;
+}
+@media (max-width: 650px) {
+  .signup-password-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
 body {
   margin: 0;
   padding: 0;
@@ -15,18 +75,22 @@ body {
   justify-content: space-around;
   align-items: center;
   min-height: 100vh;
-  gap: 2rem;
+  gap: 1rem;
+
+  
 }
 
 .login-container {
   background-color: rgba(255, 255, 255, 0.05);
-  padding: 40px;
+  padding: 30px;
  border-radius: 16px;
   box-shadow: 0 0 20px #8e44ad;
   color: #fff;
+ 
   width: 90%;
-  max-width: 500px;
+  max-width: 600px;
   text-align: center;
+
   
   box-sizing: border-box;
 }
@@ -40,7 +104,7 @@ body {
 form input {
   width: 100%;
   padding: 12px;
-  margin: 10px 0;
+  margin: 5px 0;
   border: none;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
@@ -81,7 +145,7 @@ button:hover {
 
 .signup-link {
   margin-top: 20px;
-  font-size: 14px;
+  font-size: 18px;
   color: #ccc;
 }
 
@@ -107,8 +171,8 @@ button:hover {
   .login-container {
     padding: 24px 8px;
     border-radius: 10px;
-    max-width:95%;
-    width:90%;
+    /* max-width:95%; */
+    width:100%;
     min-width: 0;
     margin: 0 auto;
   }
@@ -130,7 +194,7 @@ button:hover {
     font-size: 0.95rem;
   }
   .signup-link {
-    font-size: 12px;
+    font-size: 18px;
   }
 }
 .google-auth{
@@ -147,15 +211,13 @@ button:hover {
     align-items: center;
     justify-content: center;
     gap: 1.5rem;
-    padding: 1.5rem 0.5rem;
+    padding: 1.5rem 1rem;
     min-height: 100vh;
   }
   .login-container {
-    padding: 24px 8px;
+    padding: 24px 15px;
     border-radius: 10px;
-    max-width:80%;
-    width:80%;
-    min-width: 0;
+    
     margin: 0 auto;
   }
 }

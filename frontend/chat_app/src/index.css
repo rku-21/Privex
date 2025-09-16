@@ -1,21 +1,26 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
 body {
   background: linear-gradient(135deg, #0f0c29, #24204e, #1b1b31) !important;
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
-  overflow-x: hidden; 
-  overflow-y: auto;   
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 #root {
   background: linear-gradient(135deg, #0f0c29, #24204e, #1b1b31) !important;
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
-  overflow-x: hidden; 
-  overflow-y: auto; 
-  height:100%;  
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: 100%;
+}
+
+body.dark-mode, body.dark-mode #root {
+  background: linear-gradient(135deg, #18122b, #181225 80%, #0a081b 100%) !important;
 }
 
  

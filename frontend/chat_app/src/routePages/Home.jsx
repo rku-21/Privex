@@ -8,17 +8,20 @@ import {ChatContainer} from "../components/chatContainer/ChatContainer.jsx";
 import { useChatStore } from "../store/useChatStore.js";
 import { Sidebar } from "../components/sidebar/Sidebar.jsx" 
 
- export const Home = () => {
-  const {selectedUser}=useChatStore();
-return (
-    <div className="parent">
-    <Navbar/>
-    <div className={`home-container`} >
-    <Sidebar/>
-    {!selectedUser ?<NoChatSelected/>:<ChatContainer/>}
+
+import { useThemeStore } from "../store/useThemeStore";
+
+export const Home = () => {
+  const { selectedUser } = useChatStore();
+  const { theme } = useThemeStore();
+  return (
+    <div className={`parent${theme === "dark" ? " dark-mode" : ""}`}>
+      <Navbar />
+      <div className={`home-container${theme === "dark" ? " dark-mode" : ""}`}>
+        <Sidebar />
+        {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
       </div>
-   <BottomNavbar/>
-    
+      <BottomNavbar />
     </div>
   );
 };
