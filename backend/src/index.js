@@ -62,6 +62,7 @@ const port = process.env.PORT || 5001;
 
 app.use("/api/auth", authRoutes);
 
+app.get('/ping', (req, res) => res.status(200).send('OK'));
 
 
 app.use("/api/messages", protectRoute, messageRoutes);
