@@ -18,6 +18,7 @@ import messageRoutes from './route/message.route.js';
 
 
 
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
@@ -36,7 +37,12 @@ app.use(
 if(process.env.NODE_ENV === "production") {
 
   
-  app.use(express.static(path.join(__dirname, "../frontend/chat_app/dist")));
+ app.use((req, res, next) => {
+  if (req.path === '/ping') return next();  // Skip static middleware for /ping
+  express.static(path.join(__dirname, "../frontend/chat_app/dist"))(req, res, next);
+});
+-+
+  app.get('/ping', (req, res) => res.status(200).send('OK'));
 
 
 
