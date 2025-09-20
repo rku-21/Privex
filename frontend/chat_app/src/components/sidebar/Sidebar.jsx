@@ -1,34 +1,30 @@
-import React from 'react'
-import { useChatStore } from '../../store/useChatStore.js';
-import { useEffect, useState } from 'react';
-import { SidebarSkeleton } from '../../Skeleton/SidebarSkeleton.jsx';
-import {Users} from "lucide-react"
-import { useAuthStore } from '../../store/useAuthStore.js';
-// Sidebar component for displaying friends list with online status sorting
-export const Sidebar = () => {
-  // Get online users and current authenticated user from auth store
-  const { onlineUsers, authUser } = useAuthStore();
-  const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+import React, { useEffect, useState } from "react";
+import { Search, MoreVertical } from "lucide-react";
+import { useChatStore } from "../../store/useChatStore.js";
+import { useAuthStore } from "../../store/useAuthStore.js";
+import { SidebarSkeleton } from "../../Skeleton/SidebarSkeleton.jsx";
 
-  // Get friends and related state from chat store
+export const Sidebar = () => {
+  const { onlineUsers, authUser } = useAuthStore();
   const { getFriends, friends, selectedUser, setSelectedUser, isUsersLoding } = useChatStore();
 
-  // Fetch friends list on mount
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch friends from DB
   useEffect(() => {
     getFriends();
   }, [getFriends]);
 
-  const currentUser = authUser;
+  // Filter out self
+  let filteredUsers = friends.filter((user) => user._id !== authUser._id);
 
-  // Filter out the current user from the friends list
-  let filteredUsers = friends.filter((user) => user._id !== currentUser._id);
+  // Apply search filter
+  filteredUsers = filteredUsers.filter(
+    (user) =>
+      user.fullname.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  // If 'Show online only' is checked, filter to only online friends
-  if (showOnlineOnly) {
-    filteredUsers = filteredUsers.filter((user) => onlineUsers.includes(user._id));
-  }
-
-  // Sort friends: online users first, then offline users
+  // Sort online first
   filteredUsers = filteredUsers.sort((a, b) => {
     const aOnline = onlineUsers.includes(a._id);
     const bOnline = onlineUsers.includes(b._id);
@@ -36,58 +32,73 @@ export const Sidebar = () => {
     return aOnline ? -1 : 1;
   });
 
-  // Show loading skeleton if users are loading
   if (isUsersLoding) return <SidebarSkeleton />;
 
-  // Render the sidebar UI
   return (
-      <div className={`sidebar ${selectedUser?'sidebar-no-small-screen':''}`}>
-        <h2 className="contacts-title">Contacts</h2>
-       
-        <div className="show-online">
-            <input
-              type="checkbox"
-              checked={showOnlineOnly}
-              onChange={(e) => setShowOnlineOnly(e.target.checked)}
-              className="Checkbox"
-            />
-            <p className='show-online-text'>Show online only</p>
+    <div
+      className={`
+        ${selectedUser ? "hidden md:flex" : "flex"}
+        flex-col h-full w-full md:w-95 bg-gray-900 border-r border-gray-700
+        ${selectedUser ? "sidebar-no-small-screen" : ""}
+      `}
+    >
+    {/* Search */}
+      <div className="p-3 bg-gray-900">
+        <div className="bg-gray-800 rounded-lg flex items-center px-3 py-2">
+          <Search size={16} className="text-gray-400 mr-3" />
+          <input
+            type="text"
+            placeholder="Search users"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-transparent text-white placeholder-gray-400 outline-none flex-1"
+          />
+        </div>
       </div>
-      
 
-        <div className="user-list">
-          {/* Render each friend, sorted by online status */}
-          {filteredUsers.map((user) => (
+      {/* User List */}
+      <div className="flex-1 overflow-y-auto">
+        {filteredUsers.map((user) => {
+          const isOnline = onlineUsers.includes(user._id);
+          const isActive = selectedUser?._id === user._id;
+
+          return (
             <div
               key={user._id}
               onClick={() => setSelectedUser(user)}
-              className={` eachUser ${selectedUser?._id === user._id ? "selected" : ""}`}
+              className={`flex items-center p-3 cursor-pointer transition-colors duration-200 border-b border-gray-800 border-opacity-30 hover:bg-gray-800 ${
+                isActive ? "bg-gray-700" : ""
+              }`}
             >
-              <div className='each-user-inside'>
-                <img src={user.profilePicture || "avatar.png"} alt={user.fullname} className="user-avatar" />
-                {/* Show online indicator if user is online or is the bot */}
-                {(user.fullname === "Privex Bot" || onlineUsers.includes(user._id)) && (
-                  <span
-                    className="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full ring-2 ring-zinc-900"
-                  />
+              <div className="relative mr-4">
+                <img
+                  src={user.profilePicture || "avatar.png"}
+                  alt={user.fullname}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+                {isOnline && (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
                 )}
-                <div className="user-name">{user.fullname}
-                  <div className="text-sm text-zinc-400">
-                    {user.fullname === "Privex Bot"
-                      ? "Online"
-                      : onlineUsers.includes(user._id)
-                        ? "Online"
-                        : "Offline"}
-                  </div>
-                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white font-normal truncate">{user.fullname}</h3>
+                <p className="text-gray-400 text-sm truncate mt-1">
+                  {user.fullname === "Privex Bot"
+                    ? "Online"
+                    : isOnline
+                    ? "Online"
+                    : "Offline"}
+                </p>
               </div>
             </div>
-          ))}
-          {/* Show message if no users are available */}
-          {filteredUsers.length === 0 && (
-            <div className="text-center text-zinc-500 py-4">No online users</div>
-          )}
-        </div>
+          );
+        })}
+
+        {filteredUsers.length === 0 && (
+          <div className="text-center text-gray-500 py-4">No users found</div>
+        )}
       </div>
-  )
-}
+    </div>
+  );
+};
+

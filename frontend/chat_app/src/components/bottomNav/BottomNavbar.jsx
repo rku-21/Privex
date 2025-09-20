@@ -1,44 +1,72 @@
-import React from 'react';
-import "./bottomNav.css";
-import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../store/useAuthStore';
-
+import React from "react";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useThemeStore } from "../../store/useThemeStore";
+import { useChatStore } from "../../store/useChatStore";
 
 const BottomNavbar = () => {
-  const Navigate=useNavigate();
-  const {profile}=useAuthStore();
+  const navigate = useNavigate();
+  const { selectedUser } = useChatStore();
+  const { profile } = useAuthStore();
+  const { theme } = useThemeStore();
 
-  const GoProfile=async()=>{
-    const  User= await profile();
-    if(User){
-      Navigate("/profile");
+  const GoProfile = async () => {
+    const User = await profile();
+    if (User) {
+      navigate("/profile");
+    } else {
+      toast.error("Something went wrong");
     }
-    else {
-      toast.error("something went wrong");
-    }
-  }
-  
-  const Gohome=async()=>{
-    Navigate("/")
-  }
-  const Gosearch=async()=>{
-    Navigate("/search");
-  }
-  const GoRequestSection=async()=>{
-    Navigate("/request-received")
-  }
-   const Goconstruction=()=>{
-      Navigate("/construction");
-    }
+  };
+
   return (
-    <nav className="bottom-navbar">
-      <ul className="navbar-list">
-        <li onClick={Gohome}><i className="fas fa-home"></i></li>
-        <li onClick={Gosearch}><i className="fas fa-search"></i></li>
-        <li onClick={Goconstruction}><i className="fas fa-address-book"></i></li>
-        <li onClick={GoRequestSection}><i className=" fas fa-regular fa-heart"></i></li>
-        <li onClick={GoProfile} className="profile-icon"><i className="fas fa-user-circle"></i></li>
+    <nav
+      className={`
+        fixed bottom-0 left-0 w-full h-[60px]
+        flex items-center justify-between px-6
+        ${selectedUser ? "hidden md:flex" : "flex"}
+        
+        border-t border-white/10
+        z-[999]
+        ${
+          theme === "dark"
+            ? "bg-gray-900"
+            : "bg-gray-50"
+        }
+      `}
+    >
+      <ul className="flex justify-between items-center w-full text-white">
+        <li
+          onClick={() => navigate("/")}
+          className="text-2xl cursor-pointer transition-colors duration-200 hover:text-pink-400"
+        >
+          <i className="fas fa-home"></i>
+        </li>
+        <li
+          onClick={() => navigate("/search")}
+          className="text-2xl cursor-pointer transition-colors duration-200 hover:text-pink-400"
+        >
+          <i className="fas fa-search"></i>
+        </li>
+        <li
+          onClick={() => navigate("/construction")}
+          className="text-2xl cursor-pointer transition-colors duration-200 hover:text-pink-400"
+        >
+          <i className="fas fa-address-book"></i>
+        </li>
+        <li
+          onClick={() => navigate("/request-received")}
+          className="text-2xl cursor-pointer transition-colors duration-200 hover:text-pink-400"
+        >
+          <i className="fas fa-heart"></i>
+        </li>
+        <li
+          onClick={GoProfile}
+          className="text-2xl cursor-pointer transition-colors duration-200 hover:text-pink-400"
+        >
+          <i className="fas fa-user-circle"></i>
+        </li>
       </ul>
     </nav>
   );
