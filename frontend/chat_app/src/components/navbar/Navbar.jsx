@@ -63,7 +63,7 @@ export const Navbar = () => {
 
   return (
     <div
-      className={`flex items-center justify-between h-[80px] px-5 py-3 relative
+      className={`  flex items-center justify-between h-[80px] px-5 py-3 relative
       border border-white/5 text-white
        border-t border-white/10
       ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}
@@ -101,44 +101,44 @@ export const Navbar = () => {
       {isOpen && (
         <div
           ref={dropdownRef}
-          className={` ${theme=="dark"?"bg-gray-900":""} absolute top-[55px] right-3  border border-gray-300/60 rounded-md shadow-md z-[999]`}
+          className={` ${theme=="dark"?"bg-gray-900":""}  absolute top-[55px] right-3  border border-gray-300/60 rounded-md shadow-md z-[999]`}
         >
-          <ul className="list-none p-0 m-0">
+          <ul className="list-none p-0 m-0 w-48">
             <li
-              className="px-4 py-2 text-lg cursor-pointer hover:bg-gray-700"
+              className="px-4 py-2 text-xl cursor-pointer hover:bg-gray-700"
               onClick={handleProfile}
             >
               👤 Profile
             </li>
             <li
-              className="px-4 py-2 text-lg cursor-pointer hover:bg-[#050529a3]"
+              className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
               onClick={Goconstruction}
             >
               🔒 Privacy
             </li>
             <li
-              className="px-4 py-2 text-lg cursor-pointer hover:bg-[#050529a3]"
+              className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
               onClick={Gosettings}
             >
               ⚙️ Settings
             </li>
             <li
-              className="px-4 py-2 text-lg cursor-pointer hover:bg-[#050529a3]"
+              className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
               onClick={GotoFriends}
             >
               <i className="fa-solid fa-user-group"></i>&nbsp;&nbsp;Friends
             </li>
             <li
-              className="px-4 py-2 text-lg cursor-pointer hover:bg-[#050529a3]"
+              className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
               onClick={Goinvite}
             >
               📨 Invite Friends
             </li>
-            <li className="px-4 py-2 text-lg cursor-pointer hover:bg-[#050529a3]">
+            <li className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]">
               📞 Contact Us
             </li>
             <li
-              className="px-4 py-2 text-lg cursor-pointer hover:bg-[#050529a3]"
+              className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
               onClick={handleLogout}
             >
               🚪 Logout

@@ -41,7 +41,14 @@ export default function Signup() {
       <div
         className={`flex justify-between items-center p-4 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm fixed top-0 left-0 w-full z-50`}
       >
-        <h1 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>🔒 Privex</h1>
+        <h1 className={` text-2xl font-extrabold text-transparent bg-clip-text ${
+          
+          isDark 
+               ? 'bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500'
+              : 'bg-gradient-to-r from-green-500 via-blue-500 to-purple-600'
+        
+        
+        }`}>🔒 Privex</h1>
 
         {/* Theme Toggle */}
         <div className="flex items-center space-x-3">

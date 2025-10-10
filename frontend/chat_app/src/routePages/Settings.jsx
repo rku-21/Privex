@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { ChevronRight, User, Bell, Lock, HelpCircle, Heart, Users, Archive, Star, Download, Trash2, Moon, Sun, Volume2 } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useNavigate } from 'react-router-dom';
 
 export default function ChatSettings() {
+  const Navigate=useNavigate();
+  const {authUser,}=useAuthStore();
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const {theme}=useThemeStore();
@@ -67,11 +71,16 @@ export default function ChatSettings() {
       <div className={`${theme ? 'bg-gray-800' : 'bg-white'} border-b ${theme ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="flex items-center p-4">
           <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mr-4">
-            <span className="text-white text-xl font-semibold">JD</span>
+           <img className='w-16 h-16 rounded-full object-cover'
+            onClick={()=> Navigate('/profile')}
+              src={authUser?.profilePicture?authUser?.profilePicture:"avatar.png"}>  
+            </img>
           </div>
           <div className="flex-1">
-            <div className={`text-lg font-semibold ${theme ? 'text-white' : 'text-gray-900'}`}>John Doe</div>
-            <div className={`${theme ? 'text-gray-400' : 'text-gray-500'}`}>Hey there! I am using ChatApp.</div>
+            <div className={`text-lg font-semibold ${theme ? 'text-white' : 'text-gray-900'}`}>
+              
+            </div>
+            <div className={`${theme ? 'text-gray-400' : 'text-gray-500'}`}>Hey there! I am using Privex</div>
           </div>
           <ChevronRight className={`w-5 h-5 ${theme ? 'text-gray-400' : 'text-gray-400'}`} />
         </div>
@@ -95,12 +104,12 @@ export default function ChatSettings() {
 
         <SectionHeader title="Preferences" />
         <SettingsItem 
-          icon={theme ? Sun : Moon} 
+          icon={theme==='dark' ? Moon : Sun} 
           title="Dark Mode" 
           subtitle="Switch between light and dark themes"
           hasToggle={true}
-          toggleValue={darkMode}
-          onToggle={setDarkMode}
+          toggleValue={theme ==='dark'}
+          onToggle={useThemeStore.getState().toggleTheme}
           hasChevron={false}
         />
         <SettingsItem 

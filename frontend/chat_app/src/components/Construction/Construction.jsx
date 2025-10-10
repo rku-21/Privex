@@ -34,7 +34,7 @@ export default function UnderConstruction() {
         className="text-lg text-center max-w-md"
       >
         We’re still building your private chat experience. <br />
-        Please wait, something amazing is on the way 🚀
+        Please wait, something amazing is on the way 
       </motion.p>
 
      
@@ -49,7 +49,7 @@ export default function UnderConstruction() {
      <div style={{width:"5rem", marginTop:"8px" }}>
   <button
     onClick={Gohome}
-    className=" py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 hover:from-purple-700 hover:to-blue-700 focus:outline-none"
+    className="w-20 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 hover:from-purple-700 hover:to-blue-700 focus:outline-none"
   >
     Back
   </button>

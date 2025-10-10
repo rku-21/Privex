@@ -7,7 +7,7 @@ import Signup from "./routePages/Signup.jsx";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore.js";
 import { useEffect } from "react";
-import { Search } from "./routePages/Searchpage/search.jsx";
+import Search from "./routePages/Searchpage/search.jsx";
 import { RequestReceived } from "./routePages/RequestPage/requestReceived.jsx";
 import { Friends } from "./routePages/friendsPage/Friends.jsx";
 import UnderConstruction from "./components/Construction/Construction.jsx";
@@ -44,14 +44,60 @@ const App = () => {
 
   return (
     <div>
-      <Toaster position="top-center" reverseOrder={false} />
+            <Toaster 
+        position="top-center" 
+        reverseOrder={false}
+        toastOptions={{
+          // Default toast options
+          duration: 2000,
+          style: {
+            background: 'linear-gradient(135deg, #ffb870, #f8f8f8, #88c9a1)',
+            color: '#333',
+            fontWeight: '500',
+            borderRadius: '8px',
+            boxShadow: '0 3px 10px rgba(0, 0, 0, 0.1)',
+          },
+          // Custom styles for each toast type
+          success: {
+            style: {
+              background: 'linear-gradient(135deg, #ffb870, #f8f8f8, #88c9a1)',
+              color: '#333',
+              fontWeight: '500',
+              border: '1px solid rgba(136, 201, 161, 0.6)',
+            },
+            iconTheme: {
+              primary: '#2e7d32',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            style: {
+              background: 'linear-gradient(135deg, #ffb870, #f8f8f8, #88c9a1)',
+              color: '#333',
+              fontWeight: '500',
+              border: '1px solid rgba(255, 184, 112, 0.6)',
+            },
+            iconTheme: {
+              primary: '#c75a00',
+              secondary: '#fff',
+            },
+          },
+          loading: {
+            style: {
+              background: 'linear-gradient(135deg, #ffb870, #f8f8f8, #88c9a1)',
+              color: '#333',
+              fontWeight: '500',
+            },
+          },
+        }}
+      />
       <Routes>
         <Route path="/" element={authUser ? <Home /> : <Navigate to="/login" />} />
         <Route path="/signup" element={!authUser ? <Signup /> : <Navigate to="/" />} />
         <Route path="/login" element={!authUser ? <Login /> : <Navigate to="/" />} />
         <Route path="/profile" element={authUser ? <Profile /> : <Navigate to="/" />} />
         <Route path="/settings" element={authUser ? <Chatsettings /> : <Navigate to="/login" />} />
-        <Route path="/search" element={<Search />} />
+        <Route path="/search" element={authUser ?<Search />:<Navigate to="/login"/>} />
         <Route path="/request-received" element={<RequestReceived />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/construction" element={<UnderConstruction />} />
