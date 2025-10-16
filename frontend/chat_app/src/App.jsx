@@ -12,7 +12,6 @@ import Search from "./routePages/Searchpage/search.jsx";
 import { RequestReceived } from "./routePages/RequestPage/requestReceived.jsx";
 import { Friends } from "./routePages/friendsPage/Friends.jsx";
 import UnderConstruction from "./components/Construction/Construction.jsx";
-import IncomingCallNotification from "./components/notification/IncomingCallNotification.jsx";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -45,8 +44,6 @@ const App = () => {
 
   return (
     <div>
-      {/* Global incoming call notification that appears regardless of current route */}
-      {authUser && <IncomingCallNotification />}
       
       <Toaster 
         position="top-center" 
