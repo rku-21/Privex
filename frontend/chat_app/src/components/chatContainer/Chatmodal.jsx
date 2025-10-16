@@ -30,7 +30,11 @@ export default function CallModal({ receiver }) {
     toggleVideo,
     isMuted,
     isVideoEnabled,
-    isCallConnected, // Include isCallConnected directly in the main destructuring
+    isCallConnected,
+    connectionState,
+    iceConnectionState,
+    hasRemoteVideo,
+    hasRemoteAudio
   } = useCallStore();
 
   const [isMinimized, setIsMinimized] = useState(false);
@@ -907,28 +911,96 @@ export default function CallModal({ receiver }) {
                 </div>
                 <p className="text-white text-lg">{inCall ? 'Waiting for video...' : 'Connecting...'}</p>
                 
-                {/* Connection status indicator */}
+                {/* Enhanced connection status indicator */}
                 <div className="flex justify-center gap-2 mt-3">
-                  <div className={`h-3 w-3 rounded-full ${isCallConnected ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></div>
+                  <div className={`h-3 w-3 rounded-full ${
+                    isCallConnected ? 'bg-green-500' : 
+                    connectionState === 'disconnected' ? 'bg-red-500 animate-pulse' :
+                    connectionState === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                    'bg-yellow-500 animate-pulse'
+                  }`}></div>
                   <p className="text-sm text-gray-300">
-                    {isCallConnected ? 'Connected' : 'Establishing secure connection...'}
+                    {isCallConnected ? 'Connected' : 
+                     connectionState === 'failed' ? 'Connection failed' :
+                     connectionState === 'disconnected' ? 'Reconnecting...' :
+                     connectionState === 'connecting' ? 'Establishing connection...' :
+                     'Establishing secure connection...'}
                   </p>
+                </div>
+                
+                {/* Detailed connection info for troubleshooting */}
+                <div className="mt-2 text-xs text-gray-400">
+                  {connectionState && <span className="px-2 py-1 rounded bg-gray-800 mr-1">State: {connectionState}</span>}
+                  {iceConnectionState && <span className="px-2 py-1 rounded bg-gray-800">ICE: {iceConnectionState}</span>}
+                  {hasRemoteVideo !== undefined && (
+                    <span className={`px-2 py-1 rounded ml-1 ${hasRemoteVideo ? 'bg-green-900' : 'bg-red-900'}`}>
+                      Video: {hasRemoteVideo ? 'Active' : 'Inactive'}
+                    </span>
+                  )}
                 </div>
                 
                 {remoteStream && (
                   <div className="mt-4 text-xs text-gray-400 bg-black/30 p-2 rounded max-w-xs mx-auto">
                     <div className="font-bold mb-1">Connection Status</div>
                     {remoteStream.getTracks().map(track => (
-                      <div key={track.id} className="mb-1">
-                        {track.kind}: {track.enabled ? 'enabled' : 'disabled'}, {track.readyState}
+                      <div key={track.id} className="mb-1 flex items-center justify-between">
+                        <span className="inline-flex items-center">
+                          <span className={`h-2 w-2 rounded-full mr-1.5 ${track.enabled && track.readyState === 'live' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                          {track.kind}:
+                        </span>
+                        <span className="bg-black/40 px-1.5 py-0.5 rounded">
+                          {track.enabled ? 'enabled' : 'disabled'}, {track.readyState}
+                        </span>
                       </div>
                     ))}
-                    <button 
-                      onClick={diagnoseVideoIssue}
-                      className="mt-2 bg-blue-500 text-white text-xs px-4 py-1 rounded hover:bg-blue-600"
-                    >
-                      Troubleshoot Video
-                    </button>
+                    
+                    {/* Transport details */}
+                    <div className="mt-2 pt-2 border-t border-gray-700">
+                      <div className="font-bold mb-1">Call Details</div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <span>Connection:</span>
+                        <span className={`${isCallConnected ? 'text-green-400' : 'text-yellow-400'}`}>
+                          {connectionState || 'Unknown'}
+                        </span>
+                        
+                        <span>ICE State:</span>
+                        <span className={`${
+                          ['connected', 'completed'].includes(iceConnectionState) ? 'text-green-400' : 
+                          ['disconnected', 'failed', 'closed'].includes(iceConnectionState) ? 'text-red-400' : 
+                          'text-yellow-400'
+                        }`}>
+                          {iceConnectionState || 'Unknown'}
+                        </span>
+                        
+                        <span>Duration:</span>
+                        <span>{formatDuration(callDuration)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-3">
+                      <button 
+                        onClick={diagnoseVideoIssue}
+                        className="flex-1 bg-blue-500 text-white text-xs px-2 py-1 rounded hover:bg-blue-600"
+                      >
+                        Troubleshoot
+                      </button>
+                      <button 
+                        onClick={() => {
+                          // Get the current peer connection
+                          const peerConnection = useCallStore.getState().peerConnection;
+                          if (peerConnection) {
+                            // Try to restart ICE
+                            peerConnection.restartIce?.();
+                            toast.success("ICE connection restart requested");
+                          } else {
+                            toast.error("No active connection to restart");
+                          }
+                        }}
+                        className="flex-1 bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600"
+                      >
+                        Restart ICE
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

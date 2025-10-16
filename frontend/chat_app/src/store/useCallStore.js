@@ -40,52 +40,52 @@ export const useCallStore = create((set, get) => ({
         existingCall.close();
       }
       
-      // Create the peer connection with robust ICE servers configuration for production
+      // Enhanced peer connection setup focused on production reliability
       const peer = new RTCPeerConnection({
         iceServers: [
-          // Multiple STUN servers for better discovery
-          {urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]},
-          {urls: ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"]},
-          {urls: ["stun:stun.relay.metered.ca:80", "stun:stun.stunprotocol.org:3478"]},
+          // Primary STUN servers
+          {urls: "stun:stun.l.google.com:19302"},
+          {urls: "stun:stun1.l.google.com:19302"},
           
-          // Multiple TURN servers with different protocols for NAT traversal
-          // Using metered.ca free TURN service (with refreshed credentials)
+          // High-reliability TURN servers with multiple transports
+          // Primary TURN servers with best connectivity
           {
-            urls: "turn:a.relay.metered.ca:80",
-            username: "33dced9847ea99eebd6dbf09",
+            urls: [
+              "turn:a.relay.metered.ca:443?transport=tcp", // TCP/443 works through most firewalls
+              "turn:a.relay.metered.ca:443", 
+              "turn:a.relay.metered.ca:80?transport=tcp",
+              "turn:a.relay.metered.ca:80"
+            ],
+            username: "33dced9847ea99eebd6dbf09", 
             credential: "cvprJEZpCtFnwQT1"
           },
+          
+          // Public backup TURN servers in case primary fails
           {
-            urls: "turn:a.relay.metered.ca:80?transport=tcp",
-            username: "33dced9847ea99eebd6dbf09",
-            credential: "cvprJEZpCtFnwQT1"
-          },
-          {
-            urls: "turn:a.relay.metered.ca:443",
-            username: "33dced9847ea99eebd6dbf09",
-            credential: "cvprJEZpCtFnwQT1"
-          },
-          {
-            urls: "turn:a.relay.metered.ca:443?transport=tcp",
-            username: "33dced9847ea99eebd6dbf09",
-            credential: "cvprJEZpCtFnwQT1"
-          },
-          // Additional TURN server options
-          {
-            urls: "turn:openrelay.metered.ca:443",
+            urls: [
+              "turn:openrelay.metered.ca:443",
+              "turn:openrelay.metered.ca:80"
+            ],
             username: "openrelayproject",
             credential: "openrelayproject"
           },
+          
+          // Twilio TURN as ultimate backup
           {
-            urls: "turn:global.turn.twilio.com:3478?transport=udp",
+            urls: [
+              "turn:global.turn.twilio.com:3478?transport=udp",
+              "turn:global.turn.twilio.com:3478?transport=tcp",
+              "turn:global.turn.twilio.com:443?transport=tcp"
+            ],
             username: "33dced9847ea99eebd6dbf0943638412917535423988ac",
             credential: "HPxZ7IHCqKY4DOdwD1WZWhVnvxVv2wAJM5yr18NF"
           }
         ],
         iceCandidatePoolSize: 10,
-        iceTransportPolicy: 'all', // Try using relay servers as fallback
+        iceTransportPolicy: 'relay', // Force using TURN relays for maximum compatibility
         bundlePolicy: 'max-bundle', // Bundle ICE and media for better connectivity
-        rtcpMuxPolicy: 'require' // Required for modern WebRTC
+        rtcpMuxPolicy: 'require', // Required for modern WebRTC
+        sdpSemantics: 'unified-plan' // Better browser compatibility
       });
       
       set({peerConnection: peer, callType: type, currentCallId: receiverId});
@@ -150,22 +150,55 @@ export const useCallStore = create((set, get) => ({
         console.log("CALLER: Remote track received:", event.track.kind);
         console.log("CALLER: Track readyState:", event.track.readyState);
         
+        // Production reliability enhancement - immediately notify about receiving media
+        if (event.track.kind === "video") {
+          toast.success("Receiving video stream");
+        } else if (event.track.kind === "audio") {
+          toast.success("Receiving audio stream");
+        }
+        
         // Use the streams provided by the event rather than creating new ones
         // The event.streams array contains the MediaStreams this track belongs to
         if (event.streams && event.streams[0]) {
           console.log(`CALLER: Using provided stream with ${event.streams[0].getTracks().length} tracks`);
-          set({ remoteStream: event.streams[0] });
+          
+          // Store track reference for reliability checks
+          const tracks = event.streams[0].getTracks();
+          console.log(`CALLER: Track details:`, tracks.map(t => ({
+            kind: t.kind,
+            id: t.id,
+            enabled: t.enabled,
+            muted: t.muted,
+            readyState: t.readyState
+          })));
+          
+          // Update state with the remote stream
+          set({ 
+            remoteStream: event.streams[0],
+            hasRemoteVideo: tracks.some(t => t.kind === "video"),
+            hasRemoteAudio: tracks.some(t => t.kind === "audio")
+          });
           
           // Setup stream change monitoring
           const currentStream = event.streams[0];
           currentStream.onaddtrack = () => {
             console.log(`CALLER: Track added to stream, now has ${currentStream.getTracks().length} tracks`);
-            set({ remoteStream: currentStream });
+            const newTracks = currentStream.getTracks();
+            set({ 
+              remoteStream: currentStream,
+              hasRemoteVideo: newTracks.some(t => t.kind === "video"),
+              hasRemoteAudio: newTracks.some(t => t.kind === "audio")
+            });
           };
           
           currentStream.onremovetrack = () => {
             console.log(`CALLER: Track removed from stream, now has ${currentStream.getTracks().length} tracks`);
-            set({ remoteStream: currentStream });
+            const remainingTracks = currentStream.getTracks();
+            set({ 
+              remoteStream: currentStream,
+              hasRemoteVideo: remainingTracks.some(t => t.kind === "video"),
+              hasRemoteAudio: remainingTracks.some(t => t.kind === "audio")
+            });
           };
         } else {
           // Fallback to manual track handling if no stream in event
@@ -176,36 +209,115 @@ export const useCallStore = create((set, get) => ({
           }
           
           // Always update the store with the current remoteStream
-          console.log(`CALLER: Setting remoteStream with ${remoteStream.getTracks().length} tracks`);
-          set({ remoteStream: remoteStream });
+          const tracks = remoteStream.getTracks();
+          console.log(`CALLER: Setting remoteStream with ${tracks.length} tracks`);
+          set({ 
+            remoteStream: remoteStream,
+            hasRemoteVideo: tracks.some(t => t.kind === "video"),
+            hasRemoteAudio: tracks.some(t => t.kind === "audio")
+          });
         }
         
         // Handle track starting to flow after initial connection
         event.track.onunmute = () => {
           console.log(`CALLER: Track ${event.track.kind} unmuted`);
           // Ensure the UI updates when tracks become active
-          set(state => ({ remoteStream: state.remoteStream }));
+          set(state => ({ 
+            remoteStream: state.remoteStream,
+            // Force UI update by setting these flags again
+            hasRemoteVideo: state.remoteStream.getTracks().some(t => t.kind === "video"),
+            hasRemoteAudio: state.remoteStream.getTracks().some(t => t.kind === "audio")
+          }));
+          toast.success(`${event.track.kind === "video" ? "Video" : "Audio"} stream active`);
+        };
+        
+        // Also monitor for mute events
+        event.track.onmute = () => {
+          console.log(`CALLER: Track ${event.track.kind} muted`);
+          toast.info(`Remote ${event.track.kind} muted`);
+        };
+        
+        // And ended events
+        event.track.onended = () => {
+          console.log(`CALLER: Track ${event.track.kind} ended`);
+          toast.info(`Remote ${event.track.kind} ended`);
         };
       };
 
-      // Handle ICE candidates
+      // Enhanced ICE candidate handling with filtering and monitoring
       peer.onicecandidate = event => {
         if(event.candidate) {
-          console.log("Sending ICE candidate to", receiverId);
+          console.log("ICE candidate:", event.candidate.candidate);
+          
+          // Log the type of ICE candidate for debugging
+          const candidateStr = event.candidate.candidate;
+          const candidateType = 
+            candidateStr.includes('relay') ? 'RELAY' :
+            candidateStr.includes('srflx') ? 'SERVER REFLEXIVE' :
+            candidateStr.includes('prflx') ? 'PEER REFLEXIVE' :
+            candidateStr.includes('host') ? 'HOST' : 'UNKNOWN';
+          
+          console.log(`Sending ${candidateType} ICE candidate to ${receiverId}`);
+          
+          // Send the candidate to the peer
           socket.emit("ice-candidate", {
             to: receiverId,
             candidate: event.candidate,
           });
+        } else {
+          console.log("ICE candidate gathering complete");
         }
       };
       
-      // Handle the connection state change
+      // Enhanced connection state monitoring
       peer.onconnectionstatechange = () => {
         console.log(`Connection state changed to: ${peer.connectionState}`);
-        if(["disconnected", "failed", "closed"].includes(peer.connectionState)) {
+        
+        // Update the UI with the current connection state
+        set(state => ({ 
+          connectionState: peer.connectionState,
+          isCallConnected: peer.connectionState === 'connected'
+        }));
+        
+        if (peer.connectionState === 'connected') {
+          toast.success("Call connected successfully!");
+          
+          // Clear any reconnection timeout if it exists
+          const { reconnectTimeout } = get();
+          if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+            set({ reconnectTimeout: null });
+          }
+        } 
+        else if (peer.connectionState === 'disconnected') {
+          console.log("Connection disconnected - waiting for potential reconnection");
+          toast.info("Connection interrupted - attempting to reconnect...");
+          
+          // Set a reconnection timeout
+          const reconnectTimeout = setTimeout(() => {
+            if (peer.connectionState === 'disconnected') {
+              console.log("Reconnection failed after timeout");
+              toast.error("Call disconnected - could not reestablish connection");
+              get().endCall();
+            }
+          }, 10000); // 10 second timeout for reconnection
+          
+          // Store the timeout so we can clear it if reconnection succeeds
+          set({ reconnectTimeout });
+        }
+        else if(["failed", "closed"].includes(peer.connectionState)) {
           console.log("Connection state triggering call end");
+          toast.error("Call disconnected");
           get().endCall();
         }
+      };
+      
+      // Monitor the ICE connection state as well
+      peer.oniceconnectionstatechange = () => {
+        console.log(`ICE connection state: ${peer.iceConnectionState}`);
+        
+        // Just for UI updating purposes
+        set({ iceConnectionState: peer.iceConnectionState });
       };
       
       // Create an offer and send via socket (signaling)
@@ -276,96 +388,151 @@ export const useCallStore = create((set, get) => ({
     console.log(`Answering call from ${incomingCall.from} (${incomingCall.type})`);
 
     try {
-      // Create the peer connection with robust ICE servers configuration for production
+      // Enhanced peer connection setup focused on production reliability
       const peer = new RTCPeerConnection({
         iceServers: [
-          // Multiple STUN servers for better discovery
-          {urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]},
-          {urls: ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"]},
-          {urls: ["stun:stun.relay.metered.ca:80", "stun:stun.stunprotocol.org:3478"]},
+          // Primary STUN servers
+          {urls: "stun:stun.l.google.com:19302"},
+          {urls: "stun:stun1.l.google.com:19302"},
           
-          // Multiple TURN servers with different protocols for NAT traversal
-          // Using metered.ca free TURN service (with refreshed credentials)
+          // High-reliability TURN servers with multiple transports
+          // Primary TURN servers with best connectivity
           {
-            urls: "turn:a.relay.metered.ca:80",
-            username: "33dced9847ea99eebd6dbf09",
+            urls: [
+              "turn:a.relay.metered.ca:443?transport=tcp", // TCP/443 works through most firewalls
+              "turn:a.relay.metered.ca:443", 
+              "turn:a.relay.metered.ca:80?transport=tcp",
+              "turn:a.relay.metered.ca:80"
+            ],
+            username: "33dced9847ea99eebd6dbf09", 
             credential: "cvprJEZpCtFnwQT1"
           },
+          
+          // Public backup TURN servers in case primary fails
           {
-            urls: "turn:a.relay.metered.ca:80?transport=tcp",
-            username: "33dced9847ea99eebd6dbf09",
-            credential: "cvprJEZpCtFnwQT1"
-          },
-          {
-            urls: "turn:a.relay.metered.ca:443",
-            username: "33dced9847ea99eebd6dbf09",
-            credential: "cvprJEZpCtFnwQT1"
-          },
-          {
-            urls: "turn:a.relay.metered.ca:443?transport=tcp",
-            username: "33dced9847ea99eebd6dbf09",
-            credential: "cvprJEZpCtFnwQT1"
-          },
-          // Additional TURN server options
-          {
-            urls: "turn:openrelay.metered.ca:443",
+            urls: [
+              "turn:openrelay.metered.ca:443",
+              "turn:openrelay.metered.ca:80"
+            ],
             username: "openrelayproject",
             credential: "openrelayproject"
           },
+          
+          // Twilio TURN as ultimate backup
           {
-            urls: "turn:global.turn.twilio.com:3478?transport=udp",
+            urls: [
+              "turn:global.turn.twilio.com:3478?transport=udp",
+              "turn:global.turn.twilio.com:3478?transport=tcp",
+              "turn:global.turn.twilio.com:443?transport=tcp"
+            ],
             username: "33dced9847ea99eebd6dbf0943638412917535423988ac",
             credential: "HPxZ7IHCqKY4DOdwD1WZWhVnvxVv2wAJM5yr18NF"
           }
         ],
         iceCandidatePoolSize: 10,
-        iceTransportPolicy: 'all', // Try using relay servers as fallback
+        iceTransportPolicy: 'relay', // Force using TURN relays for maximum compatibility
         bundlePolicy: 'max-bundle', // Bundle ICE and media for better connectivity
-        rtcpMuxPolicy: 'require' // Required for modern WebRTC
+        rtcpMuxPolicy: 'require', // Required for modern WebRTC
+        sdpSemantics: 'unified-plan' // Better browser compatibility
       });
       
       console.log("Created peer connection for answering call");
       set({peerConnection: peer, currentCallId: incomingCall.from});
       
-      // Log connection state changes
+      // Enhanced connection state monitoring for production reliability
       peer.oniceconnectionstatechange = () => {
         console.log(`ICE connection state: ${peer.iceConnectionState}`);
+        
+        // Update the UI with the current connection state
+        set(state => ({ 
+          connectionState: peer.iceConnectionState,
+          isCallConnected: ['connected', 'completed'].includes(peer.iceConnectionState)
+        }));
+        
+        // Handle disconnection gracefully
+        if (peer.iceConnectionState === 'disconnected') {
+          console.log("Connection disconnected - waiting for potential reconnection");
+          toast.info("Connection interrupted - attempting to reconnect...");
+          
+          // Set a reconnection timeout
+          const reconnectTimeout = setTimeout(() => {
+            if (peer.iceConnectionState === 'disconnected') {
+              console.log("Reconnection failed after timeout");
+              toast.error("Call disconnected - could not reestablish connection");
+              get().endCall();
+            }
+          }, 10000); // 10 second timeout for reconnection
+          
+          // Store the timeout so we can clear it if reconnection succeeds
+          set({ reconnectTimeout });
+        }
+        
+        // Clear the reconnection timeout if we get connected again
+        if (['connected', 'completed'].includes(peer.iceConnectionState)) {
+          const { reconnectTimeout } = get();
+          if (reconnectTimeout) {
+            console.log("Connection reestablished - clearing reconnect timeout");
+            clearTimeout(reconnectTimeout);
+            set({ reconnectTimeout: null });
+            toast.success("Connection reestablished");
+          }
+        }
+        
+        // End the call if the connection completely fails
+        if (['failed', 'closed'].includes(peer.iceConnectionState)) {
+          console.log("Connection failed or closed - ending call");
+          toast.error("Call disconnected");
+          get().endCall();
+        }
+      };
+      
+      // Also monitor connection state changes
+      peer.onconnectionstatechange = () => {
+        console.log(`Connection state: ${peer.connectionState}`);
       };
       
       // Capture the local media with enhanced constraints for cross-device compatibility
       console.log(`Requesting ${incomingCall.type === "video" ? "video" : "audio"} media with enhanced constraints`);
       let localStream;
       
-      // First try with higher quality settings but with fallbacks
+      // First try with production-optimized constraints for maximum compatibility
       try {
         localStream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
-            channelCount: { ideal: 2, min: 1 }
+            channelCount: 1 // Force mono audio for better reliability
           },
           video: incomingCall.type === "video" ? {
             width: { ideal: 640, min: 320, max: 1280 },
             height: { ideal: 480, min: 240, max: 720 },
-            frameRate: { ideal: 24, min: 15, max: 30 },
+            frameRate: { ideal: 20, min: 10, max: 24 }, // Lower framerate for better stability
             facingMode: "user",
-            // Add advanced constraints for better device compatibility
-            advanced: [
-              { width: { min: 320 }, height: { min: 240 } },
-              { width: { max: 1280 }, height: { max: 720 } },
-              { aspectRatio: 1.333 }
-            ]
           } : false
         });
       } catch (err) {
-        console.warn("Failed to get media with advanced constraints, trying simpler fallback:", err);
+        console.warn("Failed to get media with optimized constraints, trying simpler fallback:", err);
         
-        // Fallback to simpler constraints if the advanced ones fail
-        localStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: incomingCall.type === "video"
-        });
+        try {
+          // First fallback - try very basic video
+          localStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: incomingCall.type === "video" ? { 
+              width: 320, 
+              height: 240,
+              frameRate: 15
+            } : false
+          });
+        } catch (fallbackErr) {
+          console.warn("Failed with first fallback, trying audio-only or minimal video:", fallbackErr);
+          
+          // Last resort fallback - absolute minimum requirements
+          localStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: incomingCall.type === "video" ? true : false
+          });
+        }
       }
       
       console.log("Local stream obtained:", localStream.getTracks().map(t => t.kind).join(", "));
@@ -379,28 +546,61 @@ export const useCallStore = create((set, get) => ({
       // Prepare the remote stream 
       const remoteStream = new MediaStream();
       
-      // This is critical - we need to make sure we set up the ontrack handler
-      // BEFORE setting the remote description
+      // Enhanced ontrack handler for better production reliability
+      // This is critical - we need to set up the ontrack handler BEFORE setting the remote description
       peer.ontrack = event => {
         console.log("RECEIVER: Remote track received:", event.track.kind);
         console.log("RECEIVER: Track readyState:", event.track.readyState);
+        
+        // Production reliability enhancement - immediately notify about receiving media
+        if (event.track.kind === "video") {
+          toast.success("Receiving video stream");
+        } else if (event.track.kind === "audio") {
+          toast.success("Receiving audio stream");
+        }
         
         // Use the streams provided by the event rather than creating new ones
         // The event.streams array contains the MediaStreams this track belongs to
         if (event.streams && event.streams[0]) {
           console.log(`RECEIVER: Using provided stream with ${event.streams[0].getTracks().length} tracks`);
-          set({ remoteStream: event.streams[0] });
+          
+          // Store track reference for reliability checks
+          const tracks = event.streams[0].getTracks();
+          console.log(`RECEIVER: Track details:`, tracks.map(t => ({
+            kind: t.kind,
+            id: t.id,
+            enabled: t.enabled,
+            muted: t.muted,
+            readyState: t.readyState
+          })));
+          
+          // Update state with the remote stream
+          set({ 
+            remoteStream: event.streams[0],
+            hasRemoteVideo: tracks.some(t => t.kind === "video"),
+            hasRemoteAudio: tracks.some(t => t.kind === "audio")
+          });
           
           // Setup stream change monitoring
           const currentStream = event.streams[0];
           currentStream.onaddtrack = () => {
             console.log(`RECEIVER: Track added to stream, now has ${currentStream.getTracks().length} tracks`);
-            set({ remoteStream: currentStream });
+            const newTracks = currentStream.getTracks();
+            set({ 
+              remoteStream: currentStream,
+              hasRemoteVideo: newTracks.some(t => t.kind === "video"),
+              hasRemoteAudio: newTracks.some(t => t.kind === "audio")
+            });
           };
           
           currentStream.onremovetrack = () => {
             console.log(`RECEIVER: Track removed from stream, now has ${currentStream.getTracks().length} tracks`);
-            set({ remoteStream: currentStream });
+            const remainingTracks = currentStream.getTracks();
+            set({ 
+              remoteStream: currentStream,
+              hasRemoteVideo: remainingTracks.some(t => t.kind === "video"),
+              hasRemoteAudio: remainingTracks.some(t => t.kind === "audio")
+            });
           };
         } else {
           // Fallback to manual track handling if no stream in event
@@ -411,26 +611,63 @@ export const useCallStore = create((set, get) => ({
           }
           
           // Always update the store with the current remoteStream
-          console.log(`RECEIVER: Setting remoteStream with ${remoteStream.getTracks().length} tracks`);
-          set({ remoteStream: remoteStream });
+          const tracks = remoteStream.getTracks();
+          console.log(`RECEIVER: Setting remoteStream with ${tracks.length} tracks`);
+          set({ 
+            remoteStream: remoteStream,
+            hasRemoteVideo: tracks.some(t => t.kind === "video"),
+            hasRemoteAudio: tracks.some(t => t.kind === "audio")
+          });
         }
         
         // Handle track starting to flow after initial connection
         event.track.onunmute = () => {
           console.log(`RECEIVER: Track ${event.track.kind} unmuted`);
           // Ensure the UI updates when tracks become active
-          set(state => ({ remoteStream: state.remoteStream }));
+          set(state => ({ 
+            remoteStream: state.remoteStream,
+            // Force UI update by setting these flags again
+            hasRemoteVideo: state.remoteStream.getTracks().some(t => t.kind === "video"),
+            hasRemoteAudio: state.remoteStream.getTracks().some(t => t.kind === "audio")
+          }));
+          toast.success(`${event.track.kind === "video" ? "Video" : "Audio"} stream active`);
+        };
+        
+        // Also monitor for mute events
+        event.track.onmute = () => {
+          console.log(`RECEIVER: Track ${event.track.kind} muted`);
+          toast.info(`Remote ${event.track.kind} muted`);
+        };
+        
+        // And ended events
+        event.track.onended = () => {
+          console.log(`RECEIVER: Track ${event.track.kind} ended`);
+          toast.info(`Remote ${event.track.kind} ended`);
         };
       };
 
-      // ICE handling 
+      // Enhanced ICE candidate handling with filtering and monitoring
       peer.onicecandidate = event => {
         if(event.candidate) {
-          console.log("Sending ICE candidate to caller:", incomingCall.from);
+          console.log("ICE candidate:", event.candidate.candidate);
+          
+          // Log the type of ICE candidate for debugging
+          const candidateStr = event.candidate.candidate;
+          const candidateType = 
+            candidateStr.includes('relay') ? 'RELAY' :
+            candidateStr.includes('srflx') ? 'SERVER REFLEXIVE' :
+            candidateStr.includes('prflx') ? 'PEER REFLEXIVE' :
+            candidateStr.includes('host') ? 'HOST' : 'UNKNOWN';
+          
+          console.log(`Sending ${candidateType} ICE candidate to caller: ${incomingCall.from}`);
+          
+          // Send the candidate to the peer
           socket.emit("ice-candidate", {
             to: incomingCall.from,
             candidate: event.candidate,
           });
+        } else {
+          console.log("ICE candidate gathering complete");
         }
       };
 
@@ -485,11 +722,25 @@ export const useCallStore = create((set, get) => ({
     });
   },
 
-  // Function for ending the call
+  // Enhanced function for ending the call with proper cleanup
   // sendNotification: true = send event to server, false = just cleanup locally
   endCall: (sendNotification = true) => {
     const {socket} = useAuthStore.getState();
-    const {peerConnection, localStream, remoteStream, inCall, incomingCall, currentCallId} = get();
+    const {
+      peerConnection, 
+      localStream, 
+      remoteStream, 
+      inCall, 
+      incomingCall, 
+      currentCallId,
+      reconnectTimeout
+    } = get();
+    
+    // Cleanup any reconnection timers
+    if (reconnectTimeout) {
+      console.log("Clearing reconnection timeout");
+      clearTimeout(reconnectTimeout);
+    }
     
     // Determine the recipient ID from any available source
     const receiverId = currentCallId || incomingCall?.from;
@@ -513,9 +764,16 @@ export const useCallStore = create((set, get) => ({
     if (localStream) {
       console.log("Stopping local media tracks");
       localStream.getTracks().forEach(track => {
-        track.stop();
-        console.log(`Stopped local ${track.kind} track`);
+        console.log(`Stopping local ${track.kind} track`);
+        try {
+          track.stop();
+          console.log(`Stopped local ${track.kind} track successfully`);
+        } catch (err) {
+          console.warn(`Error stopping ${track.kind} track:`, err);
+        }
       });
+    } else {
+      console.log("No local stream to cleanup");
     }
     
     // Don't stop remote tracks, just remove references to them
@@ -523,8 +781,21 @@ export const useCallStore = create((set, get) => ({
     
     // Close connection
     if (peerConnection) {
-      console.log("Closing peer connection");
-      peerConnection.close();
+      try {
+        // Remove all event listeners to prevent memory leaks
+        peerConnection.onicecandidate = null;
+        peerConnection.ontrack = null;
+        peerConnection.oniceconnectionstatechange = null;
+        peerConnection.onicegatheringstatechange = null;
+        peerConnection.onsignalingstatechange = null;
+        peerConnection.onconnectionstatechange = null;
+        
+        console.log("Closing peer connection");
+        peerConnection.close();
+        console.log("Peer connection closed");
+      } catch (err) {
+        console.warn("Error closing peer connection:", err);
+      }
     }
 
     // Reset store completely
@@ -539,7 +810,12 @@ export const useCallStore = create((set, get) => ({
       isMuted: false,
       isVideoEnabled: true,
       currentCallId: null,
-      isCallConnected: false
+      isCallConnected: false,
+      connectionState: null,
+      iceConnectionState: null,
+      hasRemoteVideo: false,
+      hasRemoteAudio: false,
+      reconnectTimeout: null
     });
   },
 
