@@ -40,13 +40,52 @@ export const useCallStore = create((set, get) => ({
         existingCall.close();
       }
       
-      // Create the peer connection with proper ICE servers
+      // Create the peer connection with robust ICE servers configuration for production
       const peer = new RTCPeerConnection({
         iceServers: [
-          {urls: "stun:stun.l.google.com:19302"},
-          {urls: "stun:stun1.l.google.com:19302"},
-          {urls: "stun:stun2.l.google.com:19302"},
+          // Multiple STUN servers for better discovery
+          {urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]},
+          {urls: ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"]},
+          {urls: ["stun:stun.relay.metered.ca:80", "stun:stun.stunprotocol.org:3478"]},
+          
+          // Multiple TURN servers with different protocols for NAT traversal
+          // Using metered.ca free TURN service (with refreshed credentials)
+          {
+            urls: "turn:a.relay.metered.ca:80",
+            username: "33dced9847ea99eebd6dbf09",
+            credential: "cvprJEZpCtFnwQT1"
+          },
+          {
+            urls: "turn:a.relay.metered.ca:80?transport=tcp",
+            username: "33dced9847ea99eebd6dbf09",
+            credential: "cvprJEZpCtFnwQT1"
+          },
+          {
+            urls: "turn:a.relay.metered.ca:443",
+            username: "33dced9847ea99eebd6dbf09",
+            credential: "cvprJEZpCtFnwQT1"
+          },
+          {
+            urls: "turn:a.relay.metered.ca:443?transport=tcp",
+            username: "33dced9847ea99eebd6dbf09",
+            credential: "cvprJEZpCtFnwQT1"
+          },
+          // Additional TURN server options
+          {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          },
+          {
+            urls: "turn:global.turn.twilio.com:3478?transport=udp",
+            username: "33dced9847ea99eebd6dbf0943638412917535423988ac",
+            credential: "HPxZ7IHCqKY4DOdwD1WZWhVnvxVv2wAJM5yr18NF"
+          }
         ],
+        iceCandidatePoolSize: 10,
+        iceTransportPolicy: 'all', // Try using relay servers as fallback
+        bundlePolicy: 'max-bundle', // Bundle ICE and media for better connectivity
+        rtcpMuxPolicy: 'require' // Required for modern WebRTC
       });
       
       set({peerConnection: peer, callType: type, currentCallId: receiverId});
@@ -56,12 +95,41 @@ export const useCallStore = create((set, get) => ({
         console.log(`ICE connection state: ${peer.iceConnectionState}`);
       };
 
-      // Handle the local media 
-      console.log(`Requesting ${type} media`);
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: type === "video"  
-      });
+      // Handle the local media with enhanced constraints for cross-device compatibility
+      console.log(`Requesting ${type} media with enhanced constraints for cross-device compatibility`);
+      let localStream;
+      
+      // First try with higher quality settings but with fallbacks
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: { ideal: 2, min: 1 }
+          },
+          video: type === "video" ? {
+            width: { ideal: 640, min: 320, max: 1280 },
+            height: { ideal: 480, min: 240, max: 720 },
+            frameRate: { ideal: 24, min: 15, max: 30 },
+            facingMode: "user",
+            // Add advanced constraints for better device compatibility
+            advanced: [
+              { width: { min: 320 }, height: { min: 240 } },
+              { width: { max: 1280 }, height: { max: 720 } },
+              { aspectRatio: 1.333 }
+            ]
+          } : false
+        });
+      } catch (err) {
+        console.warn("Failed to get media with advanced constraints, trying simpler fallback:", err);
+        
+        // Fallback to simpler constraints if the advanced ones fail
+        localStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: type === "video"
+        });
+      }
       
       console.log("Local stream obtained:", localStream.getTracks().map(t => t.kind).join(", "));
 
@@ -208,13 +276,52 @@ export const useCallStore = create((set, get) => ({
     console.log(`Answering call from ${incomingCall.from} (${incomingCall.type})`);
 
     try {
-      // Create the peer connection with proper ICE servers
+      // Create the peer connection with robust ICE servers configuration for production
       const peer = new RTCPeerConnection({
         iceServers: [
-          {urls: "stun:stun.l.google.com:19302"},
-          {urls: "stun:stun1.l.google.com:19302"},
-          {urls: "stun:stun2.l.google.com:19302"},
+          // Multiple STUN servers for better discovery
+          {urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]},
+          {urls: ["stun:stun2.l.google.com:19302", "stun:stun3.l.google.com:19302"]},
+          {urls: ["stun:stun.relay.metered.ca:80", "stun:stun.stunprotocol.org:3478"]},
+          
+          // Multiple TURN servers with different protocols for NAT traversal
+          // Using metered.ca free TURN service (with refreshed credentials)
+          {
+            urls: "turn:a.relay.metered.ca:80",
+            username: "33dced9847ea99eebd6dbf09",
+            credential: "cvprJEZpCtFnwQT1"
+          },
+          {
+            urls: "turn:a.relay.metered.ca:80?transport=tcp",
+            username: "33dced9847ea99eebd6dbf09",
+            credential: "cvprJEZpCtFnwQT1"
+          },
+          {
+            urls: "turn:a.relay.metered.ca:443",
+            username: "33dced9847ea99eebd6dbf09",
+            credential: "cvprJEZpCtFnwQT1"
+          },
+          {
+            urls: "turn:a.relay.metered.ca:443?transport=tcp",
+            username: "33dced9847ea99eebd6dbf09",
+            credential: "cvprJEZpCtFnwQT1"
+          },
+          // Additional TURN server options
+          {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject"
+          },
+          {
+            urls: "turn:global.turn.twilio.com:3478?transport=udp",
+            username: "33dced9847ea99eebd6dbf0943638412917535423988ac",
+            credential: "HPxZ7IHCqKY4DOdwD1WZWhVnvxVv2wAJM5yr18NF"
+          }
         ],
+        iceCandidatePoolSize: 10,
+        iceTransportPolicy: 'all', // Try using relay servers as fallback
+        bundlePolicy: 'max-bundle', // Bundle ICE and media for better connectivity
+        rtcpMuxPolicy: 'require' // Required for modern WebRTC
       });
       
       console.log("Created peer connection for answering call");
@@ -225,12 +332,41 @@ export const useCallStore = create((set, get) => ({
         console.log(`ICE connection state: ${peer.iceConnectionState}`);
       };
       
-      // Capture the local media
-      console.log(`Requesting ${incomingCall.type === "video" ? "video" : "audio"} media`);
-      const localStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: incomingCall.type === "video"
-      });
+      // Capture the local media with enhanced constraints for cross-device compatibility
+      console.log(`Requesting ${incomingCall.type === "video" ? "video" : "audio"} media with enhanced constraints`);
+      let localStream;
+      
+      // First try with higher quality settings but with fallbacks
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: { ideal: 2, min: 1 }
+          },
+          video: incomingCall.type === "video" ? {
+            width: { ideal: 640, min: 320, max: 1280 },
+            height: { ideal: 480, min: 240, max: 720 },
+            frameRate: { ideal: 24, min: 15, max: 30 },
+            facingMode: "user",
+            // Add advanced constraints for better device compatibility
+            advanced: [
+              { width: { min: 320 }, height: { min: 240 } },
+              { width: { max: 1280 }, height: { max: 720 } },
+              { aspectRatio: 1.333 }
+            ]
+          } : false
+        });
+      } catch (err) {
+        console.warn("Failed to get media with advanced constraints, trying simpler fallback:", err);
+        
+        // Fallback to simpler constraints if the advanced ones fail
+        localStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: incomingCall.type === "video"
+        });
+      }
       
       console.log("Local stream obtained:", localStream.getTracks().map(t => t.kind).join(", "));
       localStream.getTracks().forEach(track => {

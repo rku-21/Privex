@@ -152,19 +152,8 @@ const ChatContainer = () => {
       }
     }
     
-    // Listen for incoming calls from any source (socket events in authStore or direct socket events)
-    const handleIncomingCallEvent = (event) => {
-      console.log("Custom incoming call event received:", event.detail);
-      receiveCall(event.detail);
-      setShowCallModal(true);
-      toast.success("Incoming call");
-    };
-    
-    window.addEventListener('incomingCall', handleIncomingCallEvent);
-    
-    return () => {
-      window.removeEventListener('incomingCall', handleIncomingCallEvent);
-    };
+    // No need to listen for incoming call events anymore
+    return () => {};
   }, []);
 
   const isOnline =

@@ -305,19 +305,40 @@ export default function CallModal({ receiver }) {
             mediaElement.style.display = 'block';
           }
           
-          // Make sure all tracks are enabled
-          // For video calls, enable video tracks
-          if (callType === 'video') {
-            videoTracks.forEach(track => {
-              console.log(`Remote video track ${track.id}: enabled=${track.enabled}, readyState=${track.readyState}`);
-              if (!track.enabled) {
-                track.enabled = true;
-                console.log(`Enabled remote video track ${track.id}`);
-              }
-            });
+      // Make sure all tracks are enabled
+      // For video calls, enable video tracks and monitor them closely
+      if (callType === 'video') {
+        videoTracks.forEach(track => {
+          console.log(`Remote video track ${track.id}: enabled=${track.enabled}, readyState=${track.readyState}`);
+          if (!track.enabled) {
+            track.enabled = true;
+            console.log(`Enabled remote video track ${track.id}`);
           }
           
-          // Always enable audio tracks for both call types
+          // Monitor track for changes
+          track.onended = () => {
+            console.log(`Remote video track ${track.id} ended`);
+            // Force a UI update
+            set(state => ({ remoteStream: state.remoteStream }));
+          };
+          
+          track.onmute = () => {
+            console.log(`Remote video track ${track.id} muted`);
+            // Try to unmute the track
+            setTimeout(() => {
+              if (track.muted) {
+                console.log(`Attempting to unmute remote video track ${track.id}`);
+              }
+            }, 1000);
+          };
+          
+          track.onunmute = () => {
+            console.log(`Remote video track ${track.id} unmuted`);
+            // Force refresh the UI
+            set(state => ({ remoteStream: state.remoteStream }));
+          };
+        });
+      }          // Always enable audio tracks for both call types
           audioTracks.forEach(track => {
             console.log(`Remote audio track ${track.id}: enabled=${track.enabled}, readyState=${track.readyState}`);
             if (!track.enabled) {
@@ -518,11 +539,6 @@ export default function CallModal({ receiver }) {
   
   const handleAccept = () => {
     console.log("Accepting call");
-    if (window._ringtoneAudio) {
-      window._ringtoneAudio.pause();
-      window._ringtoneAudio.currentTime = 0;
-      window._ringtoneAudio = null;
-    }
     
     // Force reset any existing media elements
     if (localVideoRef.current) {
@@ -558,6 +574,192 @@ export default function CallModal({ receiver }) {
     if (inCall && isCallConnected) return formatDuration(callDuration);
     if (inCall && !isCallConnected) return "Calling...";
     return "Connecting...";
+  };
+  
+  // Enhanced function for diagnosing and fixing video issues
+  const diagnoseVideoIssue = () => {
+    // Check if we have any streams
+    console.log("DIAGNOSING VIDEO ISSUES:");
+    toast.info("Diagnosing video connection...");
+    
+    if (!remoteStream) {
+      console.log("- No remote stream available");
+      toast.error("No remote video stream available");
+      
+      // Check peer connection state
+      const peerConnection = useCallStore.getState().peerConnection;
+      if (peerConnection) {
+        console.log(`- Peer connection state: ${peerConnection.connectionState}`);
+        console.log(`- ICE connection state: ${peerConnection.iceConnectionState}`);
+        console.log(`- Signaling state: ${peerConnection.signalingState}`);
+        
+        toast.info(`Connection state: ${peerConnection.connectionState}`);
+        
+        // Try to restart ICE if connection failed
+        if (["disconnected", "failed", "closed"].includes(peerConnection.connectionState)) {
+          try {
+            toast.info("Attempting to restart connection...");
+            console.log("- Attempting ICE restart");
+            peerConnection.restartIce && peerConnection.restartIce();
+          } catch (err) {
+            console.error("- Failed to restart ICE:", err);
+          }
+        }
+      }
+      return;
+    }
+    
+    const videoTracks = remoteStream.getVideoTracks();
+    console.log(`- Remote stream has ${videoTracks.length} video tracks`);
+    
+    const audioTracks = remoteStream.getAudioTracks();
+    console.log(`- Remote stream has ${audioTracks.length} audio tracks`);
+    
+    if (videoTracks.length === 0) {
+      toast.error("No video tracks in remote stream");
+      
+      // Check if the other party has video enabled
+      if (socket) {
+        console.log("- Sending request to check remote video status");
+        toast.info("Requesting video from other party...");
+        
+        // Let the other party know we're not seeing their video
+        if (receiver?._id) {
+          socket.emit("request-video-check", { 
+            to: receiver._id,
+            from: authUser._id
+          });
+        }
+      }
+      return;
+    }
+    
+    // Check track status
+    videoTracks.forEach(track => {
+      console.log(`- Video track: ${track.id}`);
+      console.log(`  - Enabled: ${track.enabled}`);
+      console.log(`  - Muted: ${track.muted}`);
+      console.log(`  - ReadyState: ${track.readyState}`);
+      
+      // Try to re-enable the track if disabled
+      if (!track.enabled) {
+        track.enabled = true;
+        console.log("  - Attempted to re-enable track");
+        toast.success("Video track re-enabled");
+      }
+      
+      // Register event listeners to monitor track status
+      track.onmute = () => {
+        console.log(`Video track ${track.id} muted`);
+        toast.info("Video was muted - trying to unmute");
+        setTimeout(() => track.enabled = true, 500);
+      };
+      
+      track.onunmute = () => {
+        console.log(`Video track ${track.id} unmuted`);
+        toast.success("Video track active");
+      };
+      
+      track.onended = () => {
+        console.log(`Video track ${track.id} ended`);
+        toast.error("Video track ended");
+      };
+    });
+    
+    // Check video element
+    const videoElement = remoteVideoRef.current || document.getElementById('remote-video');
+    if (!videoElement) {
+      console.log("- Video element not found");
+      toast.error("Video element not found");
+      return;
+    }
+    
+    console.log(`- Video element status:`);
+    console.log(`  - Has srcObject: ${!!videoElement.srcObject}`);
+    console.log(`  - Paused: ${videoElement.paused}`);
+    console.log(`  - ReadyState: ${videoElement.readyState}`);
+    console.log(`  - NetworkState: ${videoElement.networkState}`);
+    console.log(`  - VideoWidth: ${videoElement.videoWidth}`);
+    console.log(`  - VideoHeight: ${videoElement.videoHeight}`);
+    
+    // Try to reattach the stream
+    try {
+      // Check if the stream actually has video content
+      const hasVisibleContent = videoElement.videoWidth > 0 && videoElement.videoHeight > 0;
+      if (!hasVisibleContent) {
+        toast.warning("Remote video has no visible content - trying to fix");
+      }
+      
+      // Force clean and reattach the stream
+      videoElement.srcObject = null;
+      setTimeout(() => {
+        videoElement.srcObject = remoteStream;
+        videoElement.muted = false;
+        videoElement.play().then(() => {
+          console.log("- Successfully replayed video");
+          toast.success("Video stream reconnected");
+          
+          // Force layout recalculation
+          videoElement.style.display = 'none';
+          setTimeout(() => {
+            videoElement.style.display = 'block';
+          }, 100);
+        }).catch(err => {
+          console.error("- Failed to replay video:", err);
+          toast.error("Failed to reconnect video");
+          
+          // Create a play button for user interaction
+          if (videoElement.parentNode) {
+            const playButton = document.createElement('button');
+            playButton.textContent = "Enable Video";
+            playButton.className = "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white px-4 py-2 rounded z-50";
+            playButton.onclick = () => {
+              videoElement.play().catch(e => console.error("Play error:", e));
+              playButton.remove();
+            };
+            
+            // Remove any existing buttons first
+            const existingButtons = videoElement.parentNode.querySelectorAll('button.video-fix');
+            existingButtons.forEach(btn => btn.remove());
+            
+            playButton.className += " video-fix";
+            videoElement.parentNode.appendChild(playButton);
+          }
+        });
+      }, 500);
+    } catch (err) {
+      console.error("- Error reattaching stream:", err);
+      toast.error("Error reconnecting video");
+    }
+    
+    // Check ICE connection state
+    const peerConnection = useCallStore.getState().peerConnection;
+    if (peerConnection) {
+      console.log(`- Peer connection state: ${peerConnection.connectionState}`);
+      console.log(`- ICE connection state: ${peerConnection.iceConnectionState}`);
+      
+      // Show connection stats
+      try {
+        peerConnection.getStats().then(stats => {
+          let videoReceived = false;
+          stats.forEach(stat => {
+            if (stat.type === 'inbound-rtp' && stat.kind === 'video') {
+              console.log(`- Video packets received: ${stat.packetsReceived}`);
+              console.log(`- Video packets lost: ${stat.packetsLost}`);
+              console.log(`- Video framerate: ${stat.framesPerSecond}`);
+              videoReceived = stat.packetsReceived > 0;
+            }
+          });
+          
+          if (!videoReceived) {
+            console.log("- No video packets being received");
+            toast.error("No video data received. Network may be blocking video traffic.");
+          }
+        });
+      } catch (err) {
+        console.error("- Failed to get connection stats:", err);
+      }
+    }
   };
   
   // Handle speaker toggle for both video and audio calls
@@ -689,56 +891,105 @@ export default function CallModal({ receiver }) {
             playsInline 
             muted={false}
             controls={false}
-            className={`w-full h-full object-cover ${remoteStream && remoteStream.getTracks().length > 0 ? 'block' : 'hidden'}`}
+            className={`w-full h-full object-cover ${remoteStream && remoteStream.getVideoTracks().length > 0 ? 'block' : 'hidden'}`}
             style={{ objectFit: 'cover' }}
             id="remote-video"
+            onLoadedMetadata={() => console.log("Remote video metadata loaded")}
+            onPlay={() => console.log("Remote video playing")}
+            onError={(e) => console.error("Remote video error:", e.target.error)}
+            onStalled={() => console.warn("Remote video stalled, attempting reconnection")}
           />
-          {!remoteStream && (
+          {(!remoteStream || remoteStream.getVideoTracks().length === 0 || !remoteStream.getVideoTracks()[0].enabled) && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div className="w-28 h-28 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-4xl md:text-6xl font-bold mb-4 mx-auto shadow-2xl">
                   {receiver?.fullname?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <p className="text-white text-lg">{inCall ? 'Waiting for video...' : 'Connecting...'}</p>
+                
+                {/* Connection status indicator */}
+                <div className="flex justify-center gap-2 mt-3">
+                  <div className={`h-3 w-3 rounded-full ${isCallConnected ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`}></div>
+                  <p className="text-sm text-gray-300">
+                    {isCallConnected ? 'Connected' : 'Establishing secure connection...'}
+                  </p>
+                </div>
+                
+                {remoteStream && (
+                  <div className="mt-4 text-xs text-gray-400 bg-black/30 p-2 rounded max-w-xs mx-auto">
+                    <div className="font-bold mb-1">Connection Status</div>
+                    {remoteStream.getTracks().map(track => (
+                      <div key={track.id} className="mb-1">
+                        {track.kind}: {track.enabled ? 'enabled' : 'disabled'}, {track.readyState}
+                      </div>
+                    ))}
+                    <button 
+                      onClick={diagnoseVideoIssue}
+                      className="mt-2 bg-blue-500 text-white text-xs px-4 py-1 rounded hover:bg-blue-600"
+                    >
+                      Troubleshoot Video
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
           
           {/* Top gradient overlay with caller info */}
           <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-8 px-4">
-            <div className="flex flex-col items-center relative">
-              {/* Center aligned caller info */}
-              <div className="w-full text-center">
+            <div className="flex items-center justify-between">
+              <div className="text-center flex-1">
                 <h3 className="text-white text-xl md:text-2xl font-semibold mb-1">{receiver?.fullname || 'Privex User'}</h3>
                 <p className="text-gray-300 text-sm">{statusText()}</p>
+                {remoteStream && !remoteStream.getVideoTracks().length && inCall && (
+                  <button 
+                    onClick={diagnoseVideoIssue}
+                    className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded mt-1 animate-pulse"
+                  >
+                    Troubleshoot Video
+                  </button>
+                )}
               </div>
-              
-              {/* Absolutely positioned minimize button */}
-              <button 
-                onClick={() => setIsMinimized(true)} 
-                className="absolute right-0 top-0 w-10 h-10 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white backdrop-blur-sm transition-colors"
-              >
-                <Minimize2 size={20} />
-              </button>
+              <div className="flex items-center">
+                {remoteStream && remoteStream.getVideoTracks().length > 0 && inCall && (
+                  <button 
+                    onClick={diagnoseVideoIssue}
+                    className="w-8 h-8 bg-blue-500/60 hover:bg-blue-500/80 rounded-full flex items-center justify-center text-white text-xs mr-2"
+                    title="Troubleshoot video"
+                  >
+                    Fix
+                  </button>
+                )}
+                <button onClick={() => setIsMinimized(true)} className="w-10 h-10 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white backdrop-blur-sm transition-colors">
+                  <Minimize2 size={20} />
+                </button>
+              </div>
             </div>
           </div>
           
-          {/* Self video overlay */}
+          {/* Self video overlay with improved handling */}
           <div className="absolute top-20 right-4 w-20 h-28 md:w-32 md:h-44 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl">
             <video 
               ref={localVideoRef} 
               autoPlay 
               muted 
               playsInline 
-              className={`w-full h-full object-cover ${localStream && isVideoEnabled ? 'block' : 'hidden'}`} 
+              className={`w-full h-full object-cover ${localStream && isVideoEnabled && localStream.getVideoTracks().length > 0 ? 'block' : 'hidden'}`} 
               style={{ transform: 'scaleX(-1)', objectFit: 'cover' }} // Mirror the local video
               id="local-video"
+              onError={(e) => console.error("Local video error:", e.target.error)}
             />
-            {(!localStream || !isVideoEnabled) && (
+            {(!localStream || !isVideoEnabled || localStream.getVideoTracks().length === 0) && (
               <div className="w-full h-full bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white text-2xl font-bold">
                 {authUser?.fullname?.charAt(0).toUpperCase() || 'Me'}
               </div>
             )}
+            {/* Debug info shown in all environments to help diagnose issues */}
+            <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[8px] p-1">
+              {localStream ? 
+                `Tracks: ${localStream.getTracks().length}, Video: ${localStream.getVideoTracks().length > 0 ? 'Yes' : 'No'}` : 
+                'No stream'}
+            </div>
           </div>
           
           {/* Floating controls at the bottom with gradient background */}

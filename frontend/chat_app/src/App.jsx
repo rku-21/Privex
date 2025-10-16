@@ -44,7 +44,6 @@ const App = () => {
 
   return (
     <div>
-      
       <Toaster 
         position="top-center" 
         reverseOrder={false}

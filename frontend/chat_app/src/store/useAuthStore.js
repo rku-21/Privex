@@ -150,43 +150,8 @@ export const useAuthStore = create((set, get) => ({
         return; // ignore duplicates
       }
       
-      // Store call info in call store
+      // Store call info in call store - only call once
       useCallStore.getState().receiveCall(data);
-      
-      // Play ringtone
-      try {
-        const audio = new Audio('/ringtone.mp3');
-        audio.loop = true;
-        audio.volume = 1.0; // Ensure volume is at maximum
-        const playPromise = audio.play();
-        
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log('Ringtone playing');
-              window._ringtoneAudio = audio;
-            })
-            .catch(err => {
-              console.error('Failed to play ringtone:', err);
-              // Try again with user interaction
-              document.addEventListener('click', function playOnClick() {
-                audio.play();
-                document.removeEventListener('click', playOnClick);
-              }, { once: true });
-            });
-        }
-      } catch (err) {
-        console.error('Error setting up ringtone:', err);
-      }
-      
-     
-      
-      // Update call store state
-      useCallStore.getState().receiveCall(data);
-      
-      // Dispatch custom event that can be caught by any mounted component
-      const event = new CustomEvent('incomingCall', { detail: data });
-      window.dispatchEvent(event);
     });
     
     // Log all socket events for debugging
