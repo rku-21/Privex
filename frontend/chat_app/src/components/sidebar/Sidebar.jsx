@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Search, MoreVertical } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore.js";
-import { useAuthStore } from "../../store/useAuthStore.js";
+import { useAuthStore } from "../../store/useAuthStore";
 import { SidebarSkeleton } from "../../Skeleton/SidebarSkeleton.jsx";
 
 export const Sidebar = () => {

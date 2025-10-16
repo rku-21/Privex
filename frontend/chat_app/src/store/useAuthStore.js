@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { axiosInstance } from '../lib/axios';
 import { io } from "socket.io-client";
 import toast from 'react-hot-toast';
-import { useCallStore } from './useCallStore';
+import { useCallStore } from './useCallStore.js';
 
 const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
 
@@ -140,13 +140,46 @@ export const useAuthStore = create((set, get) => ({
     });
 
     // --- CALL EVENTS ---
-    // We need to handle incoming call events at the auth store level
-    // This ensures that calls are received even if the chat container isn't mounted
+    // Handle call events at the auth store level to ensure global notification
     newSocket.on("incoming-call", (data) => {
       console.log("[AUTH] Incoming call received:", data);
       
-      // Notify the user about the incoming call
-      toast.success(`Incoming ${data.type || 'video'} call`, { duration: 8000 });
+      const { inCall: currentlyInCall, isReceivingCall: alreadyReceiving } = useCallStore.getState();
+      if (currentlyInCall || alreadyReceiving) {
+        console.log('Call already in progress or receiving, ignoring new call');
+        return; // ignore duplicates
+      }
+      
+      // Store call info in call store
+      useCallStore.getState().receiveCall(data);
+      
+      // Play ringtone
+      try {
+        const audio = new Audio('/ringtone.mp3');
+        audio.loop = true;
+        audio.volume = 1.0; // Ensure volume is at maximum
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Ringtone playing');
+              window._ringtoneAudio = audio;
+            })
+            .catch(err => {
+              console.error('Failed to play ringtone:', err);
+              // Try again with user interaction
+              document.addEventListener('click', function playOnClick() {
+                audio.play();
+                document.removeEventListener('click', playOnClick);
+              }, { once: true });
+            });
+        }
+      } catch (err) {
+        console.error('Error setting up ringtone:', err);
+      }
+      
+     
       
       // Update call store state
       useCallStore.getState().receiveCall(data);
