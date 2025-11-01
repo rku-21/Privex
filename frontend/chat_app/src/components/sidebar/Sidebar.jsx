@@ -6,7 +6,7 @@ import { SidebarSkeleton } from "../../Skeleton/SidebarSkeleton.jsx";
 
 export const Sidebar = () => {
   const { onlineUsers, authUser } = useAuthStore();
-  const { getFriends, friends, selectedUser, setSelectedUser, isUsersLoding } = useChatStore();
+  const { getFriends, friends, selectedUser, setselectedUser, isUsersLoding } = useChatStore();
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -65,11 +65,10 @@ export const Sidebar = () => {
           return (
             <div
               key={user._id}
-              onClick={() => setSelectedUser(user)}
+              onClick={() => setselectedUser(user)}
               className={`flex items-center p-3 cursor-pointer transition-colors duration-200 border-b border-gray-800 border-opacity-30 hover:bg-gray-800 ${
                 isActive ? "bg-gray-700" : ""
-              }`}
-            >
+              }`}>
               <div className="relative mr-4">
                 <img
                   src={user.profilePicture || "avatar.png"}

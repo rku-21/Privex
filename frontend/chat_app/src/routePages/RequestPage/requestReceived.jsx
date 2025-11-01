@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Users } from "lucide-react";
 import BottomNavbar from "../../components/bottomNav/BottomNavbar";
+
 import { Navbar } from "../../components/navbar/Navbar";
 import { useChatStore } from "../../store/useChatStore";
 import toast from "react-hot-toast";
 
 export const RequestReceived = () => {
+  
   const {
     getPendingRequests,
     friendRequests,
@@ -116,7 +118,7 @@ export const RequestReceived = () => {
         )}
       </div>
 
-      <BottomNavbar />
+      { <BottomNavbar />}
     </div>
   );
 };

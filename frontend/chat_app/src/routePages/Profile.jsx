@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Camera } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import BottomNavbar from "../components/bottomNav/BottomNavbar";
+
 import { useThemeStore } from "../store/useThemeStore";
  
 
 export const Profile = () => {
+ 
   const navigate = useNavigate();
   const { authUser, isUpdateingProfileUP, updateProfile } = useAuthStore();
   const { theme } = useThemeStore();
@@ -110,16 +112,17 @@ export const Profile = () => {
             We're Still Building This Page
           </h3>
           <p className="mt-2 text-sm relative z-10">
-            More amazing features and functionality are coming soon. Thank you
-            for your patience and cooperation!
+            More amazing features and functionality are still about to come  soon. 
           </p>
         </div>
       </div>
 
       {/* Bottom Navbar */}
-      <div className="fixed bottom-0 w-full">
-        <BottomNavbar />
-      </div>
+    
+         <div className="fixed bottom-0 w-full">
+           <BottomNavbar />
+         </div>
+      
 
       {/* Image Modal */}
       {showModal && (

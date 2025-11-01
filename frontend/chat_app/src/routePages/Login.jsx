@@ -39,7 +39,7 @@ export default function Login() {
               : 'bg-gradient-to-r from-green-500 via-blue-500 to-purple-600'
           }`}
       >
-          🔒 Privex
+           Privex
       </h1>
 
 

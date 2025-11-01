@@ -3,6 +3,20 @@ import toast from "react-hot-toast"
 import { axiosInstance } from "../lib/axios"
 import {useAuthStore} from "./useAuthStore"
 import { io } from "socket.io-client"
+// Try to load selected user from localStorage
+// const getInitialSelectedUser = () => {
+//   try {
+//     const storedUser = localStorage.getItem("chat-selected-user");
+//     if (storedUser) {
+//       return JSON.parse(storedUser);
+//     }
+//   } catch (error) {
+//     console.error("Error parsing stored selected user:", error);
+//     localStorage.removeItem("chat-selected-user");
+//   }
+//   return null;
+// };
+
 export const useChatStore=create((set,get)=>({
     messages:[],
     friends:[],
@@ -148,6 +162,14 @@ export const useChatStore=create((set,get)=>({
         const socket=useAuthStore.getState().socket;
         socket.off("newMessage");
      },
-    setSelectedUser:(selectedUser)=>{ set({selectedUser})}
+    setselectedUser:(selectedUser)=>{ 
+      set({selectedUser});
+      // Save to localStorage if exists, otherwise remove
+      if (selectedUser) {
+        localStorage.setItem("chat-selected-user", JSON.stringify(selectedUser));
+      } else {
+        localStorage.removeItem("chat-selected-user");
+      }
+    }
 
 }))

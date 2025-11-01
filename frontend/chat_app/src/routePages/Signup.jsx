@@ -48,7 +48,7 @@ export default function Signup() {
               : 'bg-gradient-to-r from-green-500 via-blue-500 to-purple-600'
         
         
-        }`}>🔒 Privex</h1>
+        }`}> Privex</h1>
 
         {/* Theme Toggle */}
         <div className="flex items-center space-x-3">

@@ -71,7 +71,7 @@ export const Navbar = () => {
     >
       {/* Logo */}
       <div className="text-2xl font-bold flex items-center">
-        🔒 <span
+         <span
   className={`${
     theme === "dark"
       ? "bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent"

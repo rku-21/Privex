@@ -6,12 +6,15 @@ import Chatsettings from "./routePages/Settings.jsx";
 import Signup from "./routePages/Signup.jsx";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore.js";
-import { useCallStore } from "./store/useCallStore.js";
+import IncomingCallNotification from "./components/notification/IncomingCallNotification.jsx";
 import { useEffect } from "react";
 import Search from "./routePages/Searchpage/search.jsx";
 import { RequestReceived } from "./routePages/RequestPage/requestReceived.jsx";
 import { Friends } from "./routePages/friendsPage/Friends.jsx";
 import UnderConstruction from "./components/Construction/Construction.jsx";
+import OutgoingCallModal from "./components/notification/OutgoingCallModal.jsx";
+import ActiveCallModal from "./components/notification/ActiveCallModal.jsx";
+
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
@@ -44,7 +47,10 @@ const App = () => {
 
   return (
     <div>
-      <Toaster 
+      <ActiveCallModal />
+      <IncomingCallNotification />
+      <OutgoingCallModal />
+       <Toaster 
         position="top-center" 
         reverseOrder={false}
         toastOptions={{

@@ -1,6 +1,6 @@
 import express from 'express';
 import {protectRoute} from '../middleware/auth.protectRoute.js';
-import {removeRequest,getAllUsers, friendRequestSend,friendRequestAccept,friendRejected,getAllfriends,getAllrequests,getMessagesBetweenUsers,sendMessges,getAllsendRequest} from '../controllers/message.controller.js';
+import {removeRequest,getAllUsers, friendRequestSend,friendRequestAccept,friendRejected,getAllfriends,getAllrequests,getMessagesBetweenUsers,sendMessges,getAllsendRequest, getUserById} from '../controllers/message.controller.js';
 const router= express.Router();
 router.get("/friends-requests", protectRoute, getAllrequests);
 router.get("/friends-send",protectRoute,getAllsendRequest);
@@ -10,6 +10,7 @@ router.post("/send/:id", protectRoute,sendMessges);
 router.post("/friends/send/:id",protectRoute,friendRequestSend);
 router.delete("/friends/remove/request/:id", protectRoute,friendRejected);
 router.post("/friends/accept/:id",protectRoute,friendRequestAccept);
+router.get("/user/:id", protectRoute, getUserById); // New endpoint to get user by ID
 router.get("/:id", protectRoute, getMessagesBetweenUsers);
 
 

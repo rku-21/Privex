@@ -3,6 +3,7 @@
 
 import React, { useEffect } from 'react';
 import BottomNavbar from '../../components/bottomNav/BottomNavbar';
+// import useCallStore from '../../store/useCallStore';
 import { Navbar } from '../../components/navbar/Navbar';
 import { useChatStore } from '../../store/useChatStore';
 import toast from 'react-hot-toast';
@@ -12,6 +13,7 @@ import { useThemeStore } from '../../store/useThemeStore';
 export const Friends = () => {
   const { getFriends, friends, removingFriendRequest } = useChatStore();
   const { theme } = useThemeStore();
+  const { inCall } = useCallStore();
 
   useEffect(() => {
     getFriends();
@@ -30,8 +32,10 @@ export const Friends = () => {
   return (
     <div className={`friends-page-bg${theme === "dark" ? " dark-mode" : ""}`}>
       <div className="friends-navbar-fixed">
-        <Navbar />
+        <Navbar/>
+        
       </div>
+      
       <div className="friends-scroll-area">
         <div className="cards-container">
           {friends.map((user) => (
@@ -52,9 +56,11 @@ export const Friends = () => {
           ))}
         </div>
       </div>
-      <div className="friends-bottomnav-fixed">
-        <BottomNavbar />
-      </div>
+      {!inCall && (
+        <div className="friends-bottomnav-fixed">
+          <BottomNavbar />
+        </div>
+      )}
     </div>
   );
 };

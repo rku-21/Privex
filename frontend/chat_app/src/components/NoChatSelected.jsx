@@ -7,7 +7,7 @@ export const NoChatSelected = () => {
         <div className="text-6xl mb-4">💬</div>
         <h1 className="text-3xl font-bold mb-2">Welcome to Privex!</h1>
         <p className="text-lg opacity-90 sm:text-md">
-          Nobody likes an empty inbox. Pick someone to start chatting 🚀
+          Nobody likes an empty inbox. Pick someone to start chatting 
         </p>
       </div>
     </div>

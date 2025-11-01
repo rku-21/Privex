@@ -1,13 +1,14 @@
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
+import User from "../models/User.model.js";
 
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin:"http://localhost:5173",
     credentials: true,
   },
 });
@@ -33,103 +34,158 @@ io.on("connection", (socket) => {
 
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-  // ================================
-  // 🟢 CALLING FEATURE EVENTS
-  // ================================
 
-  // when a user starts a call
-  socket.on("call-user", ({to,offer,type}) =>{
-    console.log(`Call attempt from ${userId} to ${to} (${type})`);
-    console.log(`Current online users: ${Object.keys(userSocketMap).join(', ')}`);
+
+
+
+  // going to handle the call events here 
+    // =============================
+  // going to handle the call events here
+
+
+
+
+
+  // Handle call timeout
+  socket.on("call-timeout", ({ to, from }) => {
+    const receiverSocketId = getReceiverSocketId(to);
+    console.log("[SERVER] Call timeout event received. From:", from, "To:", to);
+    console.log("[SERVER] Receiver socket ID:", receiverSocketId);
     
-    const receiverSocketId=userSocketMap[to];
-    if(receiverSocketId){
-      console.log(`Found socket ID ${receiverSocketId} for user ${to}`);
-      
-      io.to(receiverSocketId).emit("incoming-call", {
-        from: userId,
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("call-timeout", { from });
+      console.log("[SERVER] call-timeout event forwarded to socket:", receiverSocketId);
+    } else {
+      console.error("[SERVER] Could not find socket for user:", to);
+    }
+  });
+
+  //  when a user wants to call another its emit is in frontend
+  socket.on("call-user",async({to,offer,callType,from})=>{
+    console.log("call-user  event receiverd:", to, "from:", from);
+    const caller= await User.findById(from).select("fullname profilePicture");
+    // if(!caller){
+    //   console.error("Caller not found for ID:", from);
+    // }
+    const targetId=userSocketMap[to];
+    if(targetId){
+      io.to(targetId).emit("incoming-call",{
+        from:{_id:from,fullname:caller.fullname,profilePicture:caller.profilePicture},
+        callType,
         offer,
-        type
-      });
-      
-      console.log(`Sent incoming-call to ${to} via socket ${receiverSocketId}`);
-      
-      // Send confirmation back to caller that we found the recipient
-      socket.emit("call-status", { 
-        status: "ringing", 
-        recipient: to,
-        message: `Call initiated to ${to}` 
-      });
-    } else {
-      console.error(`Failed to find socket for user ${to}`);
-      // Send error back to caller
-      socket.emit("call-status", { 
-        status: "failed", 
-        recipient: to,
-        message: `User ${to} is not online or not found` 
-      });
+
+      })
     }
   });
 
-  // when the receiver answers the call
-  socket.on("answer-call", ({to, answer})=>{
-    console.log(`Call answer from ${userId} to ${to}`);
-    console.log(`Current online users: ${Object.keys(userSocketMap).join(', ')}`);
+
+  // when the called user answers the call
+  socket.on("answer-call",({to,answer})=>{
+    console.log("answer-call event received for:", to);
+    console.log("Finding socket for user ID:", to);
+    const targetId = userSocketMap[to];
     
-    const callerSocketId=userSocketMap[to];
-    if(callerSocketId){
-      console.log(`Found socket ID ${callerSocketId} for caller ${to}`);
-      io.to(callerSocketId).emit("call-accepted", { from:userId, answer});
-      console.log(`Sent call-accepted to ${to} via socket ${callerSocketId}`);
-    } else {
-      console.error(`Failed to find socket for user ${to} when answering call`);
-    }
-  });
-
-   // when either peer sends an ICE candidate
-  socket.on("ice-candidate", ({ to, candidate }) => {
-    const targetSocketId = userSocketMap[to];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("ice-candidate", {
-        from: userId,
-        candidate,
+    if(targetId){
+      console.log("Emitting call-accepted to socket ID:", targetId);
+      io.to(targetId).emit("call-accepted", {
+        answer
       });
-      console.log(`ICE candidate sent from ${userId} to ${to}`);
+      console.log("call-accepted event emitted with answer");
     } else {
-      console.error(`Failed to find socket for user ${to} when sending ICE candidate`);
+      console.error("Cannot emit call-accepted: Target user not found in socket map");
+      console.log("Available users in socket map:", Object.keys(userSocketMap));
+    }
+  })
+
+  // if call is accepted then we will exchange the ice candidates \
+  // both the receiver and caller will emit ice candidates when found and this handler will exchange them
+  socket.on("ice-candidate",({to,candidate})=>{
+    console.log("ice-candidate event received for:", to,candidate);
+    const targetId=userSocketMap[to];
+    if(targetId){
+      io.to(targetId).emit("ice-candidate",{
+        candidate
+      });
     }
   });
 
-  // to handle call ending
-  socket.on("end-call", ({ to }) => {
-    const targetSocketId = userSocketMap[to];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit("call-ended", { from: userId });
-      console.log(`🔴 Call ended between ${userId} and ${to}`);
-    } else if (to) {
-      // Only log that we couldn't find the target
-      console.log(`🔴 Could not find socket for user ${to} to end call`);
+
+  // if the user is rejecting the call
+  socket.on("reject-call",({to})=>{
+    console.log("reject-call event received for:", to);
+    const targetId=userSocketMap[to];
+    if(targetId){
+      console.log("Emitting call-rejected to:", targetId);
+      io.to(targetId).emit("call-rejected");
     } else {
-      // This is a special case where we're cleaning up a call but don't have a specific target
-      // Just log it, but DON'T broadcast to everyone
-      console.log(`🔴 Call cleanup initiated by ${userId} (no broadcast)`);
+      console.log("Target user not online, cannot send call rejection");
     }
   });
 
-  // when the receiver rejects the call
-  socket.on("reject-call", ({ to }) => {
-    const callerSocketId = userSocketMap[to];
-    if (callerSocketId) {
-      io.to(callerSocketId).emit("call-rejected", { from: userId });
-      console.log(`🚫 Call rejected by ${userId}`);
+  // handle the call ended event 
+  socket.on("call-ended",({to})=>{
+    console.log("call-ended event received for:", to);
+    const targetId=userSocketMap[to];
+    if(targetId){
+      io.to(targetId).emit("call-ended");
     }
   });
+
+  // listen for the senerio when the caller itself cancels the call before being answered
+  socket.on("cancel-call",({to})=>{
+    console.log("cancel-call event received for:", to);
+    const targetId=userSocketMap[to];
+    if(targetId){
+      io.to(targetId).emit("call-cancelled");
+    }
+  });
+
+
+
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${userId}`);
+    
+    // Notify any peers in active calls with this user that the call has ended
+    for (const [peerId, peerSocketId] of Object.entries(userSocketMap)) {
+      if (peerId !== userId) {
+        // Send call-ended event to any potential peers
+        io.to(peerSocketId).emit("peer-disconnected", { userId });
+      }
+    }
+    
     if (userId && userSocketMap[userId]) delete userSocketMap[userId];
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
 
 export { io, app, server };
+
+
+// Yes, Rahul — this backend socket code is looking **very solid** and essentially complete for a basic WebRTC signaling server. ✅
+
+// Here’s the step-by-step logic of what it does:
+
+// 1. **Connection & mapping**:
+
+//    * When a user connects, their `userId` is mapped to `socket.id` in `userSocketMap`.
+//    * Emits `getOnlineUsers` to everyone to update the online list.
+
+// 2. **Call signaling**:
+
+//    * `call-user`: Caller emits → server forwards `incoming-call` to the receiver.
+//    * `answer-call`: Receiver emits → server forwards `call-accepted` to the caller.
+//    * `ice-candidate`: Both peers emit → server forwards the candidate to the other peer. ✅ Works bidirectionally because each emission has the `to` field.
+//    * `reject-call` and `call-ended`: For rejecting or ending a call, server just forwards the event.
+
+// 3. **Disconnect handling**:
+
+//    * When a user disconnects, removes their mapping and updates online users.
+
+// **Next step for you:**
+
+// * Make sure the frontend emits the correct events with `to` and `from` IDs.
+// * Test one feature at a time: first `call-user` + `incoming-call`, then `answer-call`, then `ice-candidate`.
+// * You can add `console.log` in each socket handler to debug: e.g., `console.log("ICE candidate from", from, "to", to)`.
+
+
 

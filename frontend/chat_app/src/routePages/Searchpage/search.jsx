@@ -3,11 +3,13 @@ import { X, SearchIcon} from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import BottomNavbar from "../../components/bottomNav/BottomNavbar";
+// import useCallStore from "../../store/useCallStore";
 import { Loding } from "../../Skeleton/loding";
 import toast from "react-hot-toast";
 
 const Search = () => {
   const { authUser } = useAuthStore();
+ 
   const {
     getAllUsers,
     Users,
@@ -172,7 +174,7 @@ const Search = () => {
         )}
       </div>
 
-      <BottomNavbar />
+      { <BottomNavbar />}
     </div>
   );
 };
