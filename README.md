@@ -24,16 +24,9 @@ flowchart LR
     A <--> |Real-time Messaging / Signaling| C[Socket.IO Server]
     B -->|DB Read/Write| D[(MongoDB<br>Users • Messages • Calls)]
 ## 🔶 Real-Time Messaging Flow
-sequenceDiagram
-    participant UA as User A (Client)
-    participant S as Node.js Server (Socket.IO)
-    participant DB as MongoDB
-    participant UB as User B (Client)
+  <img width="3016" height="1930" alt="deepseek_mermaid_20251116_2430ac" src="https://github.com/user-attachments/assets/8a70402a-c1e3-4015-ae58-9136a2f054a9" />
 
-    UA->>S: (1) sendMessage(message)
-    S->>DB: (2) Store message in Messages collection
-    S->>UB: (3) Broadcast message to receiver
-    UB->>UB: (4) Update chat UI instantly
+
 
 ## 🔸 WebRTC Calling Flow
 sequenceDiagram
