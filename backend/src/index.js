@@ -70,7 +70,7 @@ app.use("/api/auth", authRoutes);
 
 
 
-app.use("/api/messages", protectRoute, messageRoutes);
+app.use("/api/messages",protectRoute, messageRoutes);
 
 
 console.log('🎯 Step 8: Starting server...');

@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { X, SearchIcon} from "lucide-react";
+import { X, SearchIcon } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import BottomNavbar from "../../components/bottomNav/BottomNavbar";
-// import useCallStore from "../../store/useCallStore";
 import { Loding } from "../../Skeleton/loding";
 import toast from "react-hot-toast";
 
 const Search = () => {
   const { authUser } = useAuthStore();
- 
+
   const {
     getAllUsers,
     Users,
@@ -25,6 +24,7 @@ const Search = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [userStatus, setUserStatus] = useState({}); // 👈 Local instant status
 
   const currentUser = authUser;
 
@@ -46,25 +46,44 @@ const Search = () => {
     }
   }, [searchQuery, Users]);
 
-  // friend request handling
+  useEffect(() => {
+    // Update local status when friendRequests or friends change
+    const newStatus = {};
+    filteredUsers.forEach((user) => {
+      if (friends.some((u) => u._id === user._id)) newStatus[user._id] = "friend";
+      else if (friendRequests.sent.some((u) => u._id === user._id))
+        newStatus[user._id] = "sent";
+      else if (friendRequests.received.some((u) => u._id === user._id))
+        newStatus[user._id] = "received";
+      else newStatus[user._id] = "none";
+    });
+    setUserStatus(newStatus);
+  }, [filteredUsers, friends, friendRequests]);
+
+  // Send request (instant UI + backend)
   const SendRequest = async (userId) => {
+    setUserStatus((prev) => ({ ...prev, [userId]: "sent" })); // instant update
     try {
       await SendingFriendRequest(userId);
       await getsendedRequests();
       await getPendingRequests();
       toast.success("Friend request sent");
     } catch (error) {
+      setUserStatus((prev) => ({ ...prev, [userId]: "none" })); // revert on fail
       toast.error("Something went wrong");
     }
   };
 
+  // Remove request (instant UI + backend)
   const removeRequest = async (userId) => {
+    setUserStatus((prev) => ({ ...prev, [userId]: "none" })); // instant update
     try {
       await removingFriendRequest(userId);
       await getsendedRequests();
       await getPendingRequests();
       toast.success("Friend request removed");
     } catch (error) {
+      setUserStatus((prev) => ({ ...prev, [userId]: "sent" })); // revert on fail
       toast.error("Something went wrong");
     }
   };
@@ -104,13 +123,7 @@ const Search = () => {
         {!isUsersLoding && filteredUsers.length > 0 && (
           <div className="space-y-3 mt-4">
             {filteredUsers.map((user) => {
-              const isRequestSent = friendRequests.sent.some(
-                (u) => u._id === user._id
-              );
-              const isRequestReceived = friendRequests.received.some(
-                (u) => u._id === user._id
-              );
-              const isFriend = friends.some((u) => u._id === user._id);
+              const status = userStatus[user._id] || "none";
 
               return (
                 <div
@@ -134,26 +147,26 @@ const Search = () => {
 
                   {/* Right - Button */}
                   <button
-                    disabled={isFriend}
+                    disabled={status === "friend" || status === "received"}
                     onClick={() => {
-                      if (isRequestSent) removeRequest(user._id);
-                      else if (!isRequestReceived) SendRequest(user._id);
+                      if (status === "sent") removeRequest(user._id);
+                      else if (status === "none") SendRequest(user._id);
                     }}
                     className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                      isFriend
+                      status === "friend"
                         ? "bg-gray-700 text-white cursor-default"
-                        : isRequestSent
+                        : status === "sent"
                         ? "bg-gray-700 text-white hover:bg-gray-600"
-                        : isRequestReceived
+                        : status === "received"
                         ? "bg-gray-700 text-yellow-400 cursor-default"
                         : "bg-blue-600 text-white hover:bg-blue-700"
                     }`}
                   >
-                    {isRequestSent
+                    {status === "sent"
                       ? "Cancel"
-                      : isRequestReceived
+                      : status === "received"
                       ? "Requested You"
-                      : isFriend
+                      : status === "friend"
                       ? "Friends"
                       : "Add"}
                   </button>
@@ -165,17 +178,17 @@ const Search = () => {
 
         {!isUsersLoding && searchQuery && filteredUsers.length === 0 && (
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              
-            </div>
+            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"></div>
             <h3 className="text-lg font-semibold mb-2">No users found</h3>
             <p className="text-gray-400">Try searching for someone else.</p>
           </div>
         )}
       </div>
 
-      { <BottomNavbar />}
+      <BottomNavbar />
     </div>
   );
 };
+
 export default Search;
+

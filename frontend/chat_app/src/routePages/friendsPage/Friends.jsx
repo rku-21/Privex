@@ -13,7 +13,7 @@ import { useThemeStore } from '../../store/useThemeStore';
 export const Friends = () => {
   const { getFriends, friends, removingFriendRequest } = useChatStore();
   const { theme } = useThemeStore();
-  const { inCall } = useCallStore();
+ 
 
   useEffect(() => {
     getFriends();
@@ -40,23 +40,25 @@ export const Friends = () => {
         <div className="cards-container">
           {friends.map((user) => (
             <div key={user._id} className="user-card">
-              <img
-                src={user.profilePicture || 'avatar.png'}
-                alt={user.fullname}
-                className="user-image"
-              />
+              <div className="user-image-wrap">
+                <img
+                  src={user.profilePicture || 'avatar.png'}
+                  alt={user.fullname}
+                  className="user-image"
+                />
+              </div>
               <p className="user-name">{user.fullname}</p>
               <div className="card-buttons">
                 <button className="view-btn">View Profile</button>
-                <button className="accept-btn" onClick={() => handleRemoving(user._id)}>
-                  remove
+                <button className="remove-btn" onClick={() => handleRemoving(user._id)}>
+                  Remove
                 </button>
               </div>
             </div>
           ))}
         </div>
       </div>
-      {!inCall && (
+      {(
         <div className="friends-bottomnav-fixed">
           <BottomNavbar />
         </div>

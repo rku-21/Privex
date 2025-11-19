@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import Search from "./routePages/Searchpage/search.jsx";
 import { RequestReceived } from "./routePages/RequestPage/requestReceived.jsx";
 import { Friends } from "./routePages/friendsPage/Friends.jsx";
+import { Contact } from "./routePages/Contact.jsx";
 import UnderConstruction from "./components/Construction/Construction.jsx";
 import OutgoingCallModal from "./components/notification/OutgoingCallModal.jsx";
 import ActiveCallModal from "./components/notification/ActiveCallModal.jsx";
@@ -106,6 +107,7 @@ const App = () => {
         <Route path="/search" element={authUser ?<Search />:<Navigate to="/login"/>} />
         <Route path="/request-received" element={<RequestReceived />} />
         <Route path="/friends" element={<Friends />} />
+        <Route path="/contact" element={authUser ? <Contact /> : <Navigate to="/login" />} />
         <Route path="/construction" element={<UnderConstruction />} />
       </Routes>
     </div>

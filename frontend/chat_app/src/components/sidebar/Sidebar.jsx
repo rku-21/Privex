@@ -5,8 +5,9 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { SidebarSkeleton } from "../../Skeleton/SidebarSkeleton.jsx";
 
 export const Sidebar = () => {
+  
   const { onlineUsers, authUser } = useAuthStore();
-  const { getFriends, friends, selectedUser, setselectedUser, isUsersLoding } = useChatStore();
+  const { getFriends, friends, selectedUser, setselectedUser, isUsersLoding,unreadCounts } = useChatStore();
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -57,46 +58,59 @@ export const Sidebar = () => {
       </div>
 
       {/* User List */}
-      <div className="flex-1 overflow-y-auto">
-        {filteredUsers.map((user) => {
-          const isOnline = onlineUsers.includes(user._id);
-          const isActive = selectedUser?._id === user._id;
+<div className="flex-1 overflow-y-auto">
+  {filteredUsers.map((user) => {
+    const isOnline = onlineUsers.includes(user._id);
+    const isActive = selectedUser?._id === user._id;
+    const unreadCount = unreadCounts?.[user._id] || 0; // 👈 Get unread count
 
-          return (
-            <div
-              key={user._id}
-              onClick={() => setselectedUser(user)}
-              className={`flex items-center p-3 cursor-pointer transition-colors duration-200 border-b border-gray-800 border-opacity-30 hover:bg-gray-800 ${
-                isActive ? "bg-gray-700" : ""
-              }`}>
-              <div className="relative mr-4">
-                <img
-                  src={user.profilePicture || "avatar.png"}
-                  alt={user.fullname}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                {isOnline && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-white font-normal truncate">{user.fullname}</h3>
-                <p className="text-gray-400 text-sm truncate mt-1">
-                  {user.fullname === "Privex Bot"
-                    ? "Online"
-                    : isOnline
-                    ? "Online"
-                    : "Offline"}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+    return (
+      <div
+        key={user._id}
+        onClick={() => setselectedUser(user)}
+        className={`flex items-center justify-between p-3 cursor-pointer transition-colors duration-200 border-b border-gray-800 border-opacity-30 hover:bg-gray-800 ${
+          isActive ? "bg-gray-700" : ""
+        }`}
+      >
+        {/* Left section (Avatar + Name + Status) */}
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <img
+              src={user.profilePicture || "avatar.png"}
+              alt={user.fullname}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+            {isOnline && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-white font-normal truncate">{user.fullname}</h3>
+            <p className="text-gray-400 text-sm truncate mt-1">
+              {user.fullname === "Privex Bot"
+                ? "Online"
+                : isOnline
+                ? "Online"
+                : "Offline"}
+            </p>
+          </div>
+        </div>
 
-        {filteredUsers.length === 0 && (
-          <div className="text-center text-gray-500 py-4">No users found</div>
+        {/* Right section (Unread Badge) */}
+        {unreadCount > 0 && (
+          <div className="flex items-center justify-center bg-blue-600 text-white text-xs font-semibold rounded-full w-5 h-5 shadow-md animate-[popIn_0.2s_ease-out]">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </div>
         )}
       </div>
+    );
+  })}
+
+  {filteredUsers.length === 0 && (
+    <div className="text-center text-gray-500 py-4">No users found</div>
+  )}
+</div>
+
     </div>
   );
 };

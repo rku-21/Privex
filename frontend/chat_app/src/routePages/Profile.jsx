@@ -1,138 +1,283 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera } from "lucide-react";
+import { Camera, Edit, Settings, MapPin, Mail, Phone, Calendar, ArrowLeft, Search } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import BottomNavbar from "../components/bottomNav/BottomNavbar";
-
 import { useThemeStore } from "../store/useThemeStore";
- 
+import toast from "react-hot-toast";
 
 export const Profile = () => {
- 
   const navigate = useNavigate();
   const { authUser, isUpdateingProfileUP, updateProfile } = useAuthStore();
   const { theme } = useThemeStore();
-  const [img, setImg] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCoverModal, setShowCoverModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  
+  // Form states
+  const [editedAbout, setEditedAbout] = useState(authUser?.about || "I am on Privex");
+  const [editedName, setEditedName] = useState(authUser?.fullname || "");
+  const [editedEmail, setEditedEmail] = useState(authUser?.email || "");
 
-  const handleImageUpload = async (e) => {
+  const handleProfileImageUpload = async (e) => {
     const file = e.target.files[0];
+    if (!file) return;
+    
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = async () => {
       const base64Image = reader.result;
-      setImg(base64Image);
       await updateProfile({ profilePicture: base64Image });
+      toast.success("Profile picture updated!");
     };
   };
 
-  const handleAvatarClick = () => setShowModal(true);
-  const closeModal = () => setShowModal(false);
+  const handleCoverPhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const base64Image = reader.result;
+      await updateProfile({ coverPhoto: base64Image });
+      toast.success("Cover photo updated!");
+    };
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfile({ about: editedAbout });
+      setShowEditModal(false);
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update profile");
+    }
+  };
 
   return (
-    <div
-      className={`min-h-screen flex items-center justify-center px-4 py-8 transition-colors duration-300 ${
-        theme === "dark"
-          ? "bg-gradient-to-br from-gray-900 via-gray-800 to-black"
-          : "bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400"
-      }`}
-    >
-      <div
-        className={`relative w-full max-w-md rounded-3xl shadow-2xl p-8 overflow-hidden 
-          backdrop-blur-2xl bg-white/90 dark:bg-gray-900/90`}
-      >
-        {/* Gradient Header */}
-        <div
-          className={`absolute top-0 left-0 right-0 h-24 rounded-t-3xl ${
-            theme === "dark"
-              ? "bg-gradient-to-r from-indigo-700 to-purple-800"
-              : "bg-gradient-to-r from-indigo-400 to-purple-500"
-          }`}
-        ></div>
+    <div className={`min-h-screen ${
+      theme === "dark" 
+        ? "bg-gradient-to-br from-gray-900 via-gray-800 to-black" 
+        : "bg-gray-50"
+    }`}>
 
-        {/* Avatar */}
-        <div className="flex flex-col items-center relative z-10 mt-8">
-          <div className="relative">
-            <img
-              src={img || authUser?.profilePicture || "/avatar.png"}
-              alt="Profile"
-              className="w-28 h-28 rounded-full border-4 border-white shadow-lg object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
-              onClick={handleAvatarClick}
+      {/* Main Content - No top padding since cover starts from top */}
+      <div className="pb-20">
+        {/* Cover Photo with Back Arrow */}
+        <div className="relative">
+          <img 
+            src={authUser?.coverPhoto || "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&h=400&fit=crop"} 
+            alt="Cover" 
+            className="w-full h-48 md:h-64 object-cover cursor-pointer"
+            onClick={() => setShowCoverModal(true)}
+          />
+          
+          {/* Back Arrow - floating over cover photo */}
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute top-4 left-4 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm transition"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="text-white" size={24} />
+          </button>
+          
+          {/* Edit Cover Button */}
+          <label className="absolute bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 cursor-pointer transition">
+            <Camera size={18} className={theme === "dark" ? "text-gray-300" : "text-gray-700"} />
+            <span className={`text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+              Edit Cover
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverPhotoUpload}
+              disabled={isUpdateingProfileUP}
             />
-            <label className="absolute bottom-0 right-0 bg-indigo-600 p-2 rounded-full cursor-pointer hover:bg-indigo-700 shadow-md">
-              <Camera className="w-5 h-5 text-white" />
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-                disabled={isUpdateingProfileUP}
-              />
-            </label>
-          </div>
-          <h2
-            className={`mt-4 text-2xl font-bold ${
-              theme === "dark" ? "text-white" : "text-gray-900"
-            }`}
-          >
-            {isUpdateingProfileUP ? "Uploading..." : authUser?.fullname}
-          </h2>
-          <p
-            className={`text-sm font-medium ${
-              theme === "dark" ? "text-gray-400" : "text-gray-600"
-            }`}
-          >
-            {authUser?.email}
-          </p>
+          </label>
         </div>
 
-        {/* Details */}
-        <div className="mt-8 space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-xl border border-white/40 bg-white/60 dark:bg-gray-800/60 dark:border-gray-700 hover:translate-y-[-2px] transition-transform">
-            <span className="text-sm font-semibold">Join Date</span>
-            <span className="text-sm font-medium">
-              {authUser?.createdAt?.split("T")[0]}
-            </span>
-          </div>
+        {/* Profile Header */}
+        <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} shadow-sm`}>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="relative -mt-16 pb-6">
+              <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
+                {/* Profile Picture with Edit */}
+                <div className="relative group w-32 h-32">
+                  <img 
+                    src={authUser?.profilePicture || "/avatar.png"} 
+                    alt={authUser?.fullname}
+                    className="w-full h-full rounded-full border-4 border-white dark:border-gray-800 shadow-lg object-cover cursor-pointer"
+                    onClick={() => setShowAvatarModal(true)}
+                  />
+                  <label 
+                    className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 p-2.5 rounded-full shadow-lg transition cursor-pointer"
+                  >
+                    <Camera size={18} className="text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleProfileImageUpload}
+                      disabled={isUpdateingProfileUP}
+                    />
+                  </label>
+                </div>
 
-          <div className="flex items-center justify-between p-4 rounded-xl border border-white/40 bg-white/60 dark:bg-gray-800/60 dark:border-gray-700 hover:translate-y-[-2px] transition-transform">
-            <span className="text-sm font-semibold">Status</span>
-            <span className="text-sm font-medium flex items-center gap-2 text-green-600 dark:text-green-400">
-              <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></span>
-              Active
-            </span>
+                {/* User Info */}
+                <div className="flex-1 text-center sm:text-left sm:ml-4 mt-4 sm:mt-0">
+                  <h1 className={`text-2xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                    {authUser?.fullname}
+                  </h1>
+                  <p className={theme === "dark" ? "text-gray-400" : "text-gray-500"}>
+                    @{authUser?.fullname?.toLowerCase().replace(/\\s+/g, '')}
+                  </p>
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">Online</p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 mt-4 sm:mt-0">
+                  <button 
+                    onClick={() => {
+                      setEditedAbout(authUser?.about || "I am on Privex");
+                      setShowEditModal(true);
+                    }}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    <Edit size={18} />
+                    Edit Profile
+                  </button>
+                  <button className={`p-2 ${theme === "dark" ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-200 hover:bg-gray-300"} rounded-lg transition`}>
+                    <Settings size={18} className={theme === "dark" ? "text-gray-300" : "text-gray-700"} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Construction Message */}
-        <div className="mt-6 p-4 rounded-xl relative overflow-hidden bg-gradient-to-r from-blue-500 to-blue-700 text-white shadow-lg">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-[shimmer_3s_infinite]" />
-          <h3 className="flex items-center justify-center font-bold text-base gap-2 relative z-10">
-            <span className="animate-spin">🔧</span>
-            We're Still Building This Page
-          </h3>
-          <p className="mt-2 text-sm relative z-10">
-            More amazing features and functionality are still about to come  soon. 
-          </p>
+        {/* About Section */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg shadow p-6`}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                About
+              </h2>
+              <button 
+                onClick={() => {
+                  setEditedAbout(authUser?.about || "I am on Privex");
+                  setShowEditModal(true);
+                }}
+                className="text-blue-600 hover:text-blue-700"
+              >
+                <Edit size={16} />
+              </button>
+            </div>
+            <p className={`${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-6`}>
+              {authUser?.about || "I am on Privex"}
+            </p>
+            <div className="space-y-3 text-sm">
+              <div className={`flex items-start gap-3 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                <Mail className="w-4 h-4 mt-0.5" />
+                <span>{authUser?.email}</span>
+              </div>
+              <div className={`flex items-start gap-3 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                <Calendar className="w-4 h-4 mt-0.5" />
+                <span>Joined {authUser?.createdAt?.split("T")[0]}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Bottom Navbar */}
-    
-         <div className="fixed bottom-0 w-full">
-           <BottomNavbar />
-         </div>
-      
+      <div className="fixed bottom-0 w-full z-40">
+        <BottomNavbar />
+      </div>
 
-      {/* Image Modal */}
-      {showModal && (
+      {/* Edit Profile Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg max-w-md w-full p-6`}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className={`text-xl font-semibold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                Edit Profile
+              </h3>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className={`${theme === "dark" ? "text-gray-400 hover:text-gray-300" : "text-gray-400 hover:text-gray-600"}`}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-1`}>
+                  About
+                </label>
+                <textarea 
+                  value={editedAbout}
+                  onChange={(e) => setEditedAbout(e.target.value)}
+                  rows={4}
+                  className={`w-full px-3 py-2 border ${
+                    theme === "dark" 
+                      ? "bg-gray-700 border-gray-600 text-white" 
+                      : "bg-white border-gray-300 text-gray-900"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => setShowEditModal(false)}
+                  className={`flex-1 ${
+                    theme === "dark" 
+                      ? "bg-gray-700 text-gray-300 hover:bg-gray-600" 
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  } py-2 rounded-lg transition`}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveProfile}
+                  disabled={isUpdateingProfileUP}
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {isUpdateingProfileUP ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Avatar Modal */}
+      {showAvatarModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 cursor-zoom-out"
-          onClick={closeModal}
+          onClick={() => setShowAvatarModal(false)}
         >
           <img
-            src={img || authUser?.profilePicture || "/avatar.png"}
+            src={authUser?.profilePicture || "/avatar.png"}
             alt="Profile Large"
+            className="rounded-xl max-h-[80%] max-w-[80%] object-cover"
+          />
+        </div>
+      )}
+
+      {/* Cover Photo Modal */}
+      {showCoverModal && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 cursor-zoom-out"
+          onClick={() => setShowCoverModal(false)}
+        >
+          <img
+            src={authUser?.coverPhoto || "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&h=400&fit=crop"}
+            alt="Cover Large"
             className="rounded-xl max-h-[80%] max-w-[80%] object-cover"
           />
         </div>

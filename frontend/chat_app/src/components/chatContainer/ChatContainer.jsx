@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, use } from "react";
 import { Send, Phone, Video, Paperclip, X } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -7,6 +7,7 @@ import { useThemeStore } from "../../store/useThemeStore";
 import toast from "react-hot-toast";
 import MessageSkeleton from "../../Skeleton/MessagesSkelton";
 import { useCallStore } from "../../store/useCallStore";
+import { axiosInstance } from "../../lib/axios";
 
 
 
@@ -25,9 +26,12 @@ const ChatContainer = () => {
     setselectedUser,
   } = useChatStore();
   
-  useEffect(()=>{
-    if(!socket)return;
-  })
+  // Subscribe to socket events once when component mounts
+  useEffect(() => {
+    if (!socket) return;
+    SubscribeToMessages();
+    return () => unsubscribeToMessages();
+  }, [socket]); // Only re-run if socket changes
 
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
@@ -39,18 +43,29 @@ const ChatContainer = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Fetch messages + subscribe
+  // Fetch messages when selected user changes
   useEffect(() => {
-    // Handle case where selectedUser might be just an ID string
     const userId = typeof selectedUser === 'string' ? selectedUser : selectedUser?._id;
     if (!userId) return;
     
+    console.log("Fetching messages for user:", userId);
     getMessages(userId);
-    SubscribeToMessages();
-    console.log("Selected User updated:", selectedUser);
-    
-    return () => unsubscribeToMessages();
-   
+  }, [selectedUser]);
+  // Mark messages as read when selectedUser changes
+  useEffect(() => {
+    if (!selectedUser) return;
+    const markMessagesAsRead = async () => {
+      const userId = typeof selectedUser === 'string' ? selectedUser : selectedUser?._id;
+      if (!userId) return;
+
+      try {
+        await axiosInstance.post(`/messages/${userId}/read`);
+      } catch (error) {
+        console.error("Error marking messages as read:", error);
+      }
+    };
+
+    markMessagesAsRead();
   }, [selectedUser]);
 
   // Get user ID regardless of whether selectedUser is object or string
@@ -108,15 +123,20 @@ const handleVideoCall = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
+    let fileType = null;
+    if (imagePreview) {
+     fileType = imagePreview.startsWith("data:video/") ? "video" : "image";
+    }
+    setImagePreview(null);
     try {
       await sendMessages({
         text: text.trim(),
-        image: imagePreview,
+        [fileType]: imagePreview,
       });
       setText("");
-      setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+     if (fileInputRef.current) fileInputRef.current.value = "";
     } catch {
+      console.error("Failed to send message");
       toast.error("Failed to send message!");
     }
   };
@@ -156,9 +176,9 @@ const handleVideoCall = () => {
         theme === "dark" ? "bg-gray-900" : "bg-white"
       }`}
     >
-      {/* HEADER */}
+      {/* HEADER - Fixed at top */}
       <div
-        className={`z-40 backdrop-blur-xl border-b border-gray-200/50 p-4 shadow-sm ${
+        className={`sticky top-0 z-40 backdrop-blur-xl border-b border-gray-200/50 p-4 shadow-sm ${
           theme === "dark" ? "bg-gray-800" : "bg-gray-100"
         }`}
       >
@@ -260,7 +280,7 @@ const handleVideoCall = () => {
                 : "justify-start"
             }`}
           >
-            <div
+          <div
               className={`w-auto px-4 py-3 rounded-2xl relative group max-w-xs lg:max-w-md ${
                 message.senderId === authUser._id
                   ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
@@ -268,18 +288,37 @@ const handleVideoCall = () => {
               }`}
             >
               {message.image && (
-                <img
-                  src={message.image}
-                  alt="Attachment"
-                  className="rounded-lg mb-2 max-h-64 object-cover"
-                />
+                <div className="relative">
+                  {/* Image itself */}
+                  <img
+                    src={message.image}
+                    alt="Attachment"
+                    className={`rounded-lg mb-2 max-h-64 object-cover transition-all duration-300 ${
+                      message.status === "sending" ? "blur-sm opacity-30" : ""
+                    }`}
+                  />
+
+                  {/* Loader when image uploading */}
+                  {message.status === "sending" && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+
+                  {/* Failed upload indicator */}
+                  {message.status === "failed" && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-red-500/40 rounded-lg">
+                      <span className="text-white text-xl font-bold">❌</span>
+                    </div>
+                  )}
+                </div>
               )}
+
               {message.text && <p className="text-sm">{message.text}</p>}
+
               <div
                 className={`flex items-center justify-end mt-2 space-x-1 ${
-                  message.senderId === authUser._id
-                    ? "text-white/70"
-                    : "text-gray-500"
+                  message.senderId === authUser._id ? "text-white/70" : "text-gray-500"
                 }`}
               >
                 <span className="text-xs">
@@ -287,14 +326,15 @@ const handleVideoCall = () => {
                 </span>
               </div>
             </div>
+
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* INPUT */}
+      {/* INPUT - Fixed at bottom */}
       <div
-        className={`backdrop-blur-xl border-t border-gray-200/50 p-4 relative ${
+        className={`sticky bottom-0 backdrop-blur-xl border-t border-gray-200/50 p-4 ${
           theme === "dark" ? "bg-gray-800" : "bg-gray-100"
         }`}
       >
@@ -327,7 +367,7 @@ const handleVideoCall = () => {
           </button>
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             className="hidden"
             ref={fileInputRef}
             onChange={handleImageChange}

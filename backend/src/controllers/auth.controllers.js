@@ -32,6 +32,8 @@ export const login = async(req, res) => {
             email: user.email,
             fullname: user.fullname,
             profilePicture: user.profilePicture,
+            coverPhoto: user.coverPhoto,
+            about: user.about,
             friends:user.friends,
              friendRequests:user.friendRequests,
            });
@@ -99,6 +101,8 @@ export const signup = async(req, res) => {
                     email: newUser.email,
                     fullname: newUser.fullname,
                     profilePicture: newUser.profilePicture,
+                    coverPhoto: newUser.coverPhoto,
+                    about: newUser.about,
                     friends:newUser.friends,
                     friendRequests:newUser.friendRequests,
         
@@ -134,16 +138,35 @@ export const logout = (req, res) => {
 }
 export const updateProfile=async (req,res )=> {
     try {
-        const {profilePicture}=req.body;
+        const {profilePicture, coverPhoto, about}=req.body;
         const userId=req.user._id; 
-        if (!profilePicture) {
-            return res.status(400).json({message:"please provide a profile picture"});
+        
+        let updateData = {};
+        
+        // Handle profile picture upload
+        if (profilePicture) {
+            const uploadResponse=await cloudinary.uploader.upload(profilePicture);
+            updateData.profilePicture = uploadResponse.secure_url;
         }
-         const uploadResponse=await cloudinary.uploader.upload(profilePicture);
-        //  cloudinary ek secure_url deta hai jisse hum profile picture ke liye use kar sakte hain
+        
+        // Handle cover photo upload
+        if (coverPhoto) {
+            const uploadResponse=await cloudinary.uploader.upload(coverPhoto);
+            updateData.coverPhoto = uploadResponse.secure_url;
+        }
+        
+        // Handle about text update
+        if (about !== undefined) {
+            updateData.about = about;
+        }
+        
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({message:"No data provided to update"});
+        }
+        
         const updatedUser=await User.findByIdAndUpdate(
             userId, 
-            { profilePicture: uploadResponse.secure_url},
+            updateData,
             {new:true}
          );
          res.status(200).json(updatedUser);

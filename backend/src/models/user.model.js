@@ -20,6 +20,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    coverPhoto: {
+      type: String,
+      default: "",
+    },
+    about: {
+      type: String,
+      default: "I am on Privex",
+    },
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,

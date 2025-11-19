@@ -35,18 +35,11 @@ io.on("connection", (socket) => {
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
 
-
-
-
   // going to handle the call events here 
     // =============================
   // going to handle the call events here
 
-
-
-
-
-  // Handle call timeout
+// Handle call timeout
   socket.on("call-timeout", ({ to, from }) => {
     const receiverSocketId = getReceiverSocketId(to);
     console.log("[SERVER] Call timeout event received. From:", from, "To:", to);
@@ -159,8 +152,6 @@ io.on("connection", (socket) => {
 });
 
 export { io, app, server };
-
-
 // Yes, Rahul — this backend socket code is looking **very solid** and essentially complete for a basic WebRTC signaling server. ✅
 
 // Here’s the step-by-step logic of what it does:

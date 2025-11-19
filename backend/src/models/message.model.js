@@ -16,6 +16,13 @@ const messageSchema=new mongoose.Schema ({
     },
     image:{
         type:String,
+    },
+    video:{
+        type:String,
+    },
+    read : {
+        type:Boolean,
+        default:false,
     }
     
 }

@@ -2,6 +2,8 @@ import User from '../models/user.model.js';
 import Message from '../models/message.model.js';
 import cloudinary from '../lib/cloudinary.js';
 import { getReceiverSocketId,io } from '../lib/socket.js';
+import mongoose from 'mongoose';
+
 
 export const getAllUsers = async (req, res) => {
     try {
@@ -63,38 +65,51 @@ export const getMessagesBetweenUsers = async (req, res)=> {
 }
 
 // send messages between two users
-export const sendMessges= async (req, res) => {
-    try {
-        const {text , image} = req.body;
-        const senderId=req.user._id; 
-        const receiverId=req.params.id; 
-        let imageUrl;
-        if(image){
-            //upload kar image ko cloudinary par and get secure url\
-            const uploadResponse=await cloudinary.uploader.upload(image);
-            imageUrl=uploadResponse.secure_url;
-        }
-        const newMessage=new Message ({
-            senderId,
-            receiverId,
-            text, 
-            image: imageUrl
-        });
-        await newMessage.save();
-        const  receiverSocketId= getReceiverSocketId(receiverId);
-         
-        if(receiverSocketId) {
-            io.to(receiverSocketId).emit("newMessage", newMessage);
+export const sendMessges = async (req, res) => {
+  try {
+    const { text, image, video } = req.body;
+    const senderId = req.user._id;
+    const receiverId = req.params.id;
 
-        }
-           res.status(201).json(newMessage);
-    }
-    catch(error) {
+    let fileUrl;
+    let fileType = null;
 
-        
-        res.status(500).send({message:"internal server error   "})
+    if (image) {
+      const uploadResponse = await cloudinary.uploader.upload(image, {
+        resource_type: "image",
+      });
+      fileUrl = uploadResponse.secure_url;
+      fileType = "image";
+    } else if (video) {
+      const uploadResponse = await cloudinary.uploader.upload(video, {
+        resource_type: "video", // important for video files
+      });
+      fileUrl = uploadResponse.secure_url;
+      fileType = "video";
     }
-}
+
+    const newMessage = new Message({
+      senderId,
+      receiverId,
+      text,
+      image: fileType === "image" ? fileUrl : null,
+      video: fileType === "video" ? fileUrl : null,
+    });
+
+    await newMessage.save();
+
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
+
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error("Error sending message:", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
+
 
 // /koi friend request bheje tab 
 export const friendRequestSend= async (req, res)=>{
@@ -274,5 +289,54 @@ export const getAllsendRequest=async(req,res)=>{
   catch(error){
     throw (error.message)
     res.status(500).json({message:"Failed to fetch send request",error});
+  }
+}
+
+// to mark messages as read when the user opens the chat window of the particular user 
+export const markMessagesAsRead = async (req, res) => {
+  try {
+    console.log("Marking messages as read rahul");
+    const receiverId = req.user._id;
+    const senderId = req.params.id;
+    
+    // Debug logging
+    console.log("Auth User ID (receiver):", receiverId);
+    console.log("Sender ID:", senderId);
+    
+    if (!senderId || !receiverId) {
+      console.error("Missing required IDs");
+      return res.status(400).json({ message: "Invalid user IDs" });
+    }
+
+    // Make sure both IDs are valid ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(receiverId)) {
+      console.error("Invalid ObjectId format");
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
+
+    const result = await Message.updateMany(
+      {
+        senderId: new mongoose.Types.ObjectId(senderId),
+        receiverId: new mongoose.Types.ObjectId(receiverId),
+        read: false
+      },
+      { $set: { read: true } }
+    );
+
+    console.log("Update result:", {
+      matched: result.matchedCount,
+      modified: result.modifiedCount
+    });
+
+    res.status(200).json({
+      message: "Messages marked as read",
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error("Error in markMessagesAsRead:", error);
+    res.status(500).json({
+      message: "Failed to mark messages as read",
+      error: error.message || "Unknown error"
+    });
   }
 }

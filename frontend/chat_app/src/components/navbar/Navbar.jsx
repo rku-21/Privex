@@ -43,8 +43,9 @@ export const Navbar = () => {
   };
 
   const GotoFriends = () => navigate("/friends");
+  const GotoContact = () => navigate("/contact");
   const Goconstruction = () => navigate("/construction");
-  const Gosettings = () => navigate("/settings");
+  const Gosettings = () => navigate("/construction");
 
   const Goinvite = () => {
     const appLink = "https://privex-1.onrender.com";
@@ -116,12 +117,7 @@ export const Navbar = () => {
             >
               🔒 Privacy
             </li>
-            <li
-              className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
-              onClick={Gosettings}
-            >
-              ⚙️ Settings
-            </li>
+            
             <li
               className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
               onClick={GotoFriends}
@@ -130,11 +126,20 @@ export const Navbar = () => {
             </li>
             <li
               className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
+              onClick={Gosettings}
+            >
+              ⚙️ Settings
+            </li>
+            <li
+              className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
               onClick={Goinvite}
             >
               📨 Invite Friends
             </li>
-            <li className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]">
+            <li
+              className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
+              onClick={GotoContact}
+            >
               📞 Contact Us
             </li>
             <li
