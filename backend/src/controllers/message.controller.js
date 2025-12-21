@@ -1,5 +1,6 @@
 import User from '../models/user.model.js';
 import Message from '../models/message.model.js';
+import Friendship from '../models/friendShip.model.js';
 import cloudinary from '../lib/cloudinary.js';
 import { getReceiverSocketId,io } from '../lib/socket.js';
 import mongoose from 'mongoose';
@@ -12,6 +13,84 @@ export const getAllUsers = async (req, res) => {
          res.status(200).json(filterAllUsers);
     }
     catch(error) {
+        return res.status(500).json({ message: "Internal server error", error });
+    }
+}
+
+// Search users with cursor-based pagination
+export const searchUsers = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { query, cursor, limit = 20 } = req.query;
+
+        console.log("Search request:", { query, cursor, limit, userId });
+
+        if (!query || query.trim() === "") {
+            return res.status(200).json({ users: [], nextCursor: null, hasMore: false });
+        }
+
+        // Build search query
+        const searchQuery = {
+            _id: { $ne: userId },
+            $or: [
+                { fullname: { $regex: query, $options: 'i' } },
+                { email: { $regex: query, $options: 'i' } }
+            ]
+        };
+
+        if (cursor) {
+            searchQuery.createdAt = { $lt: new Date(cursor) };
+        }
+
+        console.log("MongoDB query:", JSON.stringify(searchQuery));
+
+        const users = await User.find(searchQuery)
+            .select("fullname email profilePicture createdAt")
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit) + 1);
+
+        console.log(`Found ${users.length} users`);
+
+        // For each user, check relationship status
+        const usersWithStatus = await Promise.all(users.map(async (user) => {
+            // Check if friends (accepted friendship where I'm userId)
+            const isFriend = await Friendship.findOne({
+                userId: userId,
+                friendId: user._id,
+                status: "accepted"
+            });
+
+            // Check if I sent a request (pending friendship where I'm userId)
+            const sentRequest = await Friendship.findOne({
+                userId: userId,
+                friendId: user._id,
+                status: "pending"
+            });
+
+            // Check if they sent me a request (pending friendship where they're userId)
+            const receivedRequest = await Friendship.findOne({
+                userId: user._id,
+                friendId: userId,
+                status: "pending"
+            });
+
+            return {
+                ...user.toObject(),
+                relationshipStatus: isFriend ? "friend" : sentRequest ? "sent" : receivedRequest ? "received" : "none"
+            };
+        }));
+
+        const hasMore = users.length > limit;
+        const result = usersWithStatus.slice(0, limit);
+        const nextCursor = hasMore ? users[limit - 1].createdAt : null;
+
+        res.status(200).json({
+            users: result,
+            nextCursor,
+            hasMore
+        });
+    } catch (error) {
+        console.error("Error searching users:", error);
         return res.status(500).json({ message: "Internal server error", error });
     }
 }
@@ -33,35 +112,95 @@ export const getUserById = async (req, res) => {
     }
 }
 
-// to get all friends to dashboard
-export const getAllfriends=async(req,res)=>{
+// to get all friends to dashboard with cursor-based pagination
+export const getAllfriends = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate("friends", "fullname email profilePicture");
+    const { cursor, limit = 20 } = req.query;
+    const userId = req.user._id;
 
-    res.status(200).json(user.friends);
+    // Find friendships where I'm the userId and status is accepted
+    // We only need one direction since we create bidirectional friendships
+    const query = {
+      userId: userId,
+      status: "accepted"
+    };
+
+    if (cursor) {
+      query.createdAt = { $lt: new Date(cursor) };
+    }
+
+    const friendships = await Friendship.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit) + 1)
+      .populate('friendId', 'fullname email profilePicture');
+
+    const hasMore = friendships.length > limit;
+    const friends = friendships.slice(0, limit).map(f => f.friendId);
+    const nextCursor = hasMore ? friendships[limit - 1].createdAt : null;
+
+    console.log(`Fetched ${friends.length} friends for user ${userId}`);
+
+    res.status(200).json({ 
+      friends, 
+      nextCursor,
+      hasMore 
+    });
   } catch (error) {
+    console.error("Error fetching friends:", error);
     res.status(500).json({ message: "Failed to fetch friends", error });
   }
 }
 
 
 
-export const getMessagesBetweenUsers = async (req, res)=> {
-    try {
-        const myId=req.user._id;
-        const userTochatId=req.params.id; 
-        const messages=await Message.find({
-            $or: [
-                {senderId: myId, receiverId: userTochatId},
-                {senderId: userTochatId, receiverId: myId}
-            ]
-        })
-        .sort({createdAt: 1}) 
-        res.status(200).json(messages);
+// Get messages with cursor-based pagination
+export const getMessagesBetweenUsers = async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const userTochatId = req.params.id;
+    const { cursor, limit = 50 } = req.query;
+
+    // Check if users are friends before allowing message retrieval
+    const friendship = await Friendship.findOne({
+      $or: [
+        { userId: myId, friendId: userTochatId, status: "accepted" },
+        { userId: userTochatId, friendId: myId, status: "accepted" }
+      ]
+    });
+
+    if (!friendship) {
+      return res.status(403).json({ 
+        message: "You can only view messages with your friends",
+        messages: [],
+        nextCursor: null,
+        hasMore: false
+      });
     }
-    catch(error) {
-        return res.status(500).json({ message: "Internal server error", error });
+
+    // Create consistent chatId
+    const chatId = [myId.toString(), userTochatId].sort().join('_');
+
+    const query = { chatId };
+    if (cursor) {
+      query.createdAt = { $lt: new Date(cursor) };
     }
+
+    const messages = await Message.find(query)
+      .sort({ createdAt: -1 }) // newest first
+      .limit(parseInt(limit) + 1);
+
+    const hasMore = messages.length > limit;
+    const result = messages.slice(0, limit).reverse(); // reverse to show oldest first in chat
+    const nextCursor = hasMore ? messages[limit - 1].createdAt : null;
+
+    res.status(200).json({
+      messages: result,
+      nextCursor,
+      hasMore
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error", error });
+  }
 }
 
 // send messages between two users
@@ -70,6 +209,23 @@ export const sendMessges = async (req, res) => {
     const { text, image, video } = req.body;
     const senderId = req.user._id;
     const receiverId = req.params.id;
+
+    // Check if users are friends before allowing message send
+    const friendship = await Friendship.findOne({
+      $or: [
+        { userId: senderId, friendId: receiverId, status: "accepted" },
+        { userId: receiverId, friendId: senderId, status: "accepted" }
+      ]
+    });
+
+    if (!friendship) {
+      return res.status(403).json({ 
+        message: "You can only send messages to your friends" 
+      });
+    }
+
+    // Create consistent chatId
+    const chatId = [senderId.toString(), receiverId].sort().join('_');
 
     let fileUrl;
     let fileType = null;
@@ -82,15 +238,15 @@ export const sendMessges = async (req, res) => {
       fileType = "image";
     } else if (video) {
       const uploadResponse = await cloudinary.uploader.upload(video, {
-        resource_type: "video", // important for video files
+        resource_type: "video",
       });
       fileUrl = uploadResponse.secure_url;
       fileType = "video";
     }
 
     const newMessage = new Message({
+      chatId,
       senderId,
-      receiverId,
       text,
       image: fileType === "image" ? fileUrl : null,
       video: fileType === "video" ? fileUrl : null,
@@ -101,6 +257,9 @@ export const sendMessges = async (req, res) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
+      console.log(`💬 Message sent via socket to user ${receiverId}`);
+    } else {
+      console.log(`📵 User ${receiverId} is offline, message saved to DB`);
     }
 
     res.status(201).json(newMessage);
@@ -111,9 +270,9 @@ export const sendMessges = async (req, res) => {
 };
 
 
-// /koi friend request bheje tab 
-export const friendRequestSend= async (req, res)=>{
-try {
+// Send friend request
+export const friendRequestSend = async (req, res) => {
+  try {
     const fromUserId = req.user._id;
     const toUserId = req.params.id;
 
@@ -121,147 +280,171 @@ try {
       return res.status(400).json({ error: "Cannot send request to yourself" });
     }
 
-    const fromUser = await User.findById(fromUserId);
     const toUser = await User.findById(toUserId);
-
     if (!toUser) return res.status(404).json({ error: "User not found" });
 
-  
+    // Check if friendship already exists
+    const existingFriendship = await Friendship.findOne({
+      userId: fromUserId,
+      friendId: toUserId
+    });
 
-    toUser.friendRequests.receiveds.push(fromUserId);
-    fromUser.friendRequests.sent.push(toUser);
-    await toUser.save();
-    await fromUser.save();
+    if (existingFriendship) {
+      return res.status(400).json({ error: "Friend request already sent or you are already friends" });
+    }
+
+    // Create new friendship request
+    const friendship = new Friendship({
+      userId: fromUserId,
+      friendId: toUserId,
+      status: "pending"
+    });
+
+    await friendship.save();
 
     res.status(200).json({ message: "Friend request sent" });
   } catch (err) {
-
-    res.status(500).json(err);
+    console.error("Error sending friend request:", err);
+    res.status(500).json({ error: "Server error" });
   }
 }
-// if he user want to remove the request
-
-
-  export const removeRequest = async (req, res) => {
+// Remove sent friend request
+export const removeRequest = async (req, res) => {
   try {
     const fromUserId = req.user._id;
-    const  toUserId  = req.params.id;            
+    const toUserId = req.params.id;
 
     if (!toUserId) {
       return res.status(400).json({ message: "toUserId is required." });
     }
 
-    const fromUser = await User.findById(fromUserId);
-    const toUser = await User.findById(toUserId);
+    const result = await Friendship.findOneAndDelete({
+      userId: fromUserId,
+      friendId: toUserId,
+      status: "pending"
+    });
 
-    if (!fromUser || !toUser) {
-      return res.status(404).json({ message: "User not found." });
+    if (!result) {
+      return res.status(404).json({ message: "Friend request not found." });
     }
 
-    
-    fromUser.friendRequests.sent = fromUser.friendRequests.sent.filter(
-      (id) => id.toString() !== toUserId
-    );
-
-   
-    toUser.friendRequests.receiveds = toUser.friendRequests.receiveds.filter(
-      (id) => id.toString() !== fromUserId
-    );
-
-
-    await fromUser.save();
-    await toUser.save();
-
     res.status(200).json({ message: "Friend request removed successfully." });
-
   } catch (error) {
-
-
+    console.error("Error removing request:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 };
-//jab koi request ko accept kre tab
-export const friendRequestAccept= async (req,res)=>{
-    try {
-    const currentUser = await User.findById(req.user._id);
-    const fromUser = await User.findById(req.params.id);
+// Accept friend request
+export const friendRequestAccept = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+    const fromUserId = req.params.id;
 
+    const fromUser = await User.findById(fromUserId);
     if (!fromUser) return res.status(404).json({ error: "User not found" });
 
-    const index = currentUser.friendRequests.receiveds.indexOf(fromUser._id);
-    if (index === -1) {
+    // Find and update the pending friendship
+    const friendship = await Friendship.findOneAndUpdate(
+      {
+        userId: fromUserId,
+        friendId: currentUserId,
+        status: "pending"
+      },
+      { status: "accepted" },
+      { new: true }
+    );
+
+    if (!friendship) {
       return res.status(400).json({ error: "No such friend request" });
     }
 
-    currentUser.friendRequests.receiveds.splice(index, 1);
-    fromUser.friendRequests.sent=fromUser.friendRequests.sent.filter((id)=>id.toString()!==currentUser._id.toString()
-   );
-    currentUser.friends.push(fromUser._id);
-    fromUser.friends.push(currentUser._id);
+    // Create reverse friendship for bidirectional relationship
+    await Friendship.create({
+      userId: currentUserId,
+      friendId: fromUserId,
+      status: "accepted"
+    });
 
-    await currentUser.save();
-    await fromUser.save();
+    // Update friends count
+    await User.findByIdAndUpdate(currentUserId, { $inc: { friendsCount: 1 } });
+    await User.findByIdAndUpdate(fromUserId, { $inc: { friendsCount: 1 } });
 
     res.status(200).json({ message: "Friend request accepted" });
   } catch (err) {
+    console.error("Error accepting friend request:", err);
     res.status(500).json({ error: "Server error" });
   }
 }
-// jab koi reques reject kar de 
-export const friendRejected=async(req,res)=>{
- try {
-    const currentUser = await User.findById(req.user._id);
-    const otherUser = await User.findById(req.params.id);
+// Reject friend request or remove friend
+export const friendRejected = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+    const otherUserId = req.params.id;
 
+    const otherUser = await User.findById(otherUserId);
     if (!otherUser) return res.status(404).json({ error: "User not found" });
 
-    
-    currentUser.friends = currentUser.friends.filter(
-      (id) => id.toString() !== otherUser._id.toString()
-    );
-     otherUser.friends = otherUser.friends.filter(
-      (id) => id.toString() !== currentUser._id.toString()
-    );
+    // Delete all friendships between these users
+    const result = await Friendship.deleteMany({
+      $or: [
+        { userId: currentUserId, friendId: otherUserId },
+        { userId: otherUserId, friendId: currentUserId }
+      ]
+    });
 
-    currentUser.friendRequests.receiveds = currentUser.friendRequests.receiveds.filter(
-      (id) => id.toString() !== otherUser._id.toString()
-    );
-    otherUser.friendRequests.sent=otherUser.friendRequests.sent.filter((id)=>id.toString()!==currentUser._id.toString()
-    );
-   
-    currentUser.friendRequests.sent=currentUser.friendRequests.sent.filter((id)=>id.toString()!==otherUser._id.toString()
-   );
-   otherUser.friendRequests.receiveds=otherUser.friendRequests.receiveds.filter((id)=>id.toString()!==currentUser._id.toString()
-  );
+    // Update friends count if they were friends
+    if (result.deletedCount > 0) {
+      const wasAccepted = await Friendship.findOne({
+        $or: [
+          { userId: currentUserId, friendId: otherUserId, status: "accepted" },
+          { userId: otherUserId, friendId: currentUserId, status: "accepted" }
+        ]
+      });
 
-    await currentUser.save();
-    await otherUser.save();
+      if (wasAccepted) {
+        await User.findByIdAndUpdate(currentUserId, { $inc: { friendsCount: -1 } });
+        await User.findByIdAndUpdate(otherUserId, { $inc: { friendsCount: -1 } });
+      }
+    }
 
     res.status(200).json({ message: "Friend removed/rejected" });
   } catch (err) {
+    console.error("Error rejecting/removing friend:", err);
     res.status(500).json({ error: "Server error" });
   }
 }
 
-// to get all friends request sended to users and show him  
+// Get all received friend requests with cursor pagination
 export const getAllrequests = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("friendRequests.receiveds");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const userId = req.user._id;
+    const { cursor, limit = 20 } = req.query;
+
+    const query = {
+      friendId: userId,
+      status: "pending"
+    };
+
+    if (cursor) {
+      query.createdAt = { $lt: new Date(cursor) };
     }
-    const receivedUserIds = user.friendRequests.receiveds;
 
- 
-    const receivedRequests = await User.find({
-      _id: { $in: receivedUserIds },
-    }).select("_id fullname email profilePicture");
+    const requests = await Friendship.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit) + 1)
+      .populate('userId', '_id fullname email profilePicture');
 
-    
-    res.status(200).json(receivedRequests);
+    const hasMore = requests.length > limit;
+    const receivedRequests = requests.slice(0, limit).map(r => r.userId);
+    const nextCursor = hasMore ? requests[limit - 1].createdAt : null;
 
+    res.status(200).json({
+      requests: receivedRequests,
+      nextCursor,
+      hasMore
+    });
   } catch (error) {
-
+    console.error("Error fetching requests:", error);
     res.status(500).json({
       message: "Failed to fetch friend requests",
       error: error.message,
@@ -271,62 +454,67 @@ export const getAllrequests = async (req, res) => {
 
 
 
-// to get all the sendRequsts 
-export const getAllsendRequest=async(req,res)=>{
+// Get all sent friend requests with cursor pagination
+export const getAllsendRequest = async (req, res) => {
   try {
-    const authUserId=req.user._id;
-   
-      const user = await User.findById(authUserId).select("friendRequests.sent");
-        if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-        const sentRequests = await User.find({
-      _id: { $in: user.friendRequests.sent },
-    }).select("_id fullname email profilePicture");
+    const userId = req.user._id;
+    const { cursor, limit = 20 } = req.query;
 
-    res.status(200).json(sentRequests);
-}
-  catch(error){
-    throw (error.message)
-    res.status(500).json({message:"Failed to fetch send request",error});
+    const query = {
+      userId: userId,
+      status: "pending"
+    };
+
+    if (cursor) {
+      query.createdAt = { $lt: new Date(cursor) };
+    }
+
+    const requests = await Friendship.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit) + 1)
+      .populate('friendId', '_id fullname email profilePicture');
+
+    const hasMore = requests.length > limit;
+    const sentRequests = requests.slice(0, limit).map(r => r.friendId);
+    const nextCursor = hasMore ? requests[limit - 1].createdAt : null;
+
+    res.status(200).json({
+      requests: sentRequests,
+      nextCursor,
+      hasMore
+    });
+  } catch (error) {
+    console.error("Error fetching sent requests:", error);
+    res.status(500).json({ message: "Failed to fetch send request", error });
   }
 }
 
-// to mark messages as read when the user opens the chat window of the particular user 
+// Mark messages as read when user opens chat
 export const markMessagesAsRead = async (req, res) => {
   try {
-    console.log("Marking messages as read rahul");
     const receiverId = req.user._id;
     const senderId = req.params.id;
-    
-    // Debug logging
-    console.log("Auth User ID (receiver):", receiverId);
-    console.log("Sender ID:", senderId);
-    
+
     if (!senderId || !receiverId) {
-      console.error("Missing required IDs");
       return res.status(400).json({ message: "Invalid user IDs" });
     }
 
-    // Make sure both IDs are valid ObjectIds
     if (!mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(receiverId)) {
-      console.error("Invalid ObjectId format");
       return res.status(400).json({ message: "Invalid ID format" });
     }
 
+    // Create chatId
+    const chatId = [receiverId.toString(), senderId].sort().join('_');
+
+    // Mark unread messages from sender as read
     const result = await Message.updateMany(
       {
+        chatId: chatId,
         senderId: new mongoose.Types.ObjectId(senderId),
-        receiverId: new mongoose.Types.ObjectId(receiverId),
         read: false
       },
       { $set: { read: true } }
     );
-
-    console.log("Update result:", {
-      matched: result.matchedCount,
-      modified: result.modifiedCount
-    });
 
     res.status(200).json({
       message: "Messages marked as read",

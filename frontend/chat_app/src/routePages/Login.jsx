@@ -15,7 +15,9 @@ export default function Login() {
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const validForm = () => {
-    if (!formData.email.trim()) return window.toast?.error('Email is required');
+    if (!formData.email.trim()) {
+      return window.toast?.error('Email is required');
+    }
     if (!formData.password) return window.toast?.error('Password is required');
     return true;
   };

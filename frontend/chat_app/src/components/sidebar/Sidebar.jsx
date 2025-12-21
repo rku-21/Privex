@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Search, MoreVertical } from "lucide-react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Search, MoreVertical, Loader2 } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore.js";
 import { useAuthStore } from "../../store/useAuthStore";
 import { SidebarSkeleton } from "../../Skeleton/SidebarSkeleton.jsx";
@@ -7,14 +7,42 @@ import { SidebarSkeleton } from "../../Skeleton/SidebarSkeleton.jsx";
 export const Sidebar = () => {
   
   const { onlineUsers, authUser } = useAuthStore();
-  const { getFriends, friends, selectedUser, setselectedUser, isUsersLoding,unreadCounts } = useChatStore();
+  const { 
+    getFriends, 
+    friends, 
+    selectedUser, 
+    setselectedUser, 
+    isUsersLoding,
+    unreadCounts,
+    friendsPagination,
+    loadMoreFriends 
+  } = useChatStore();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const scrollContainerRef = useRef(null);
+  const observerRef = useRef(null);
 
-  // Fetch friends from DB
+  // Fetch friends from DB on mount
   useEffect(() => {
-    getFriends();
-  }, [getFriends]);
+    getFriends(true); // true = reset
+  }, []);
+
+  // Infinite scroll observer
+  const lastFriendRef = useCallback(
+    (node) => {
+      if (friendsPagination.isLoading) return;
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && friendsPagination.hasMore) {
+          loadMoreFriends();
+        }
+      });
+
+      if (node) observerRef.current.observe(node);
+    },
+    [friendsPagination.isLoading, friendsPagination.hasMore, loadMoreFriends]
+  );
 
   // Filter out self
   let filteredUsers = friends.filter((user) => user._id !== authUser._id);
@@ -58,15 +86,17 @@ export const Sidebar = () => {
       </div>
 
       {/* User List */}
-<div className="flex-1 overflow-y-auto">
-  {filteredUsers.map((user) => {
+<div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+  {filteredUsers.map((user, index) => {
     const isOnline = onlineUsers.includes(user._id);
     const isActive = selectedUser?._id === user._id;
-    const unreadCount = unreadCounts?.[user._id] || 0; // 👈 Get unread count
+    const unreadCount = unreadCounts?.[user._id] || 0;
+    const isLastItem = index === filteredUsers.length - 1;
 
     return (
       <div
         key={user._id}
+        ref={isLastItem ? lastFriendRef : null}
         onClick={() => setselectedUser(user)}
         className={`flex items-center justify-between p-3 cursor-pointer transition-colors duration-200 border-b border-gray-800 border-opacity-30 hover:bg-gray-800 ${
           isActive ? "bg-gray-700" : ""
@@ -106,8 +136,15 @@ export const Sidebar = () => {
     );
   })}
 
-  {filteredUsers.length === 0 && (
+  {filteredUsers.length === 0 && !isUsersLoding && (
     <div className="text-center text-gray-500 py-4">No users found</div>
+  )}
+  
+  {/* Loading indicator for pagination */}
+  {friendsPagination.isLoading && (
+    <div className="flex justify-center items-center py-4">
+      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+    </div>
   )}
 </div>
 

@@ -1,58 +1,41 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema(
-  {
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    fullname: {
-      type: String,
-      required: true,
-    },
-    password: {
-      type: String,
-      required: true,
-      minlength: 6,
-    },
-    profilePicture: {
-      type: String,
-      default: "",
-    },
-    coverPhoto: {
-      type: String,
-      default: "",
-    },
-    about: {
-      type: String,
-      default: "I am on Privex",
-    },
-    friends: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    friendRequests: {
-      sent: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-      ],
-      receiveds: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-      ],
-    },
+const userSchema = new mongoose.Schema({
+  email: { 
+    type: String, 
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true
   },
-  {
-    timestamps: true, // createdAt and updatedAt
-  }
-);
+  fullname: { 
+    type: String, 
+    required: true 
+  },
+  password: { 
+    type: String, 
+    required: true,
+    minlength: 6 
+  },
+  profilePicture: { 
+    type: String, 
+    default: "" 
+  },
+  coverPhoto: { 
+    type: String, 
+    default: "" 
+  },
+  about: { 
+    type: String, 
+    default: "I am on Privex" 
+  },
+  friendsCount: { 
+    type: Number, 
+    default: 0 
+  },
+}, { timestamps: true });
+
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default User;
+

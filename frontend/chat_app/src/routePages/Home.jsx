@@ -13,15 +13,10 @@ import { Sidebar } from "../components/sidebar/Sidebar.jsx"
 import { useThemeStore } from "../store/useThemeStore";
 
 export const Home = () => {
-  const { selectedUser, setselectedUser, friends, getFriends } = useChatStore();
+  const { selectedUser, setselectedUser, friends } = useChatStore();
   const { theme } = useThemeStore();
   const location = useLocation();
   // const { inCall } = useCallStore();
-  
-  // Fetch friends list
-  useEffect(() => {
-    getFriends();
-  }, []);
   
   // Handle direct call navigation from notification
   useEffect(() => {

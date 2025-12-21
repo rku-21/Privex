@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 import { Users } from "lucide-react";
 import BottomNavbar from "../../components/bottomNav/BottomNavbar";
 
@@ -15,22 +15,36 @@ export const RequestReceived = () => {
     getFriends,
     getsendedRequests,
     removingFriendRequest,
+    receivedRequestsPagination,
+    loadMoreReceivedRequests,
   } = useChatStore();
 
-  const [visibleCount, setVisibleCount] = useState(6);
+  const observerRef = useRef();
+
+  // Infinite scroll - last request element reference
+  const lastRequestRef = useCallback((node) => {
+    if (receivedRequestsPagination.isLoading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && receivedRequestsPagination.hasMore) {
+        loadMoreReceivedRequests();
+      }
+    });
+    
+    if (node) observerRef.current.observe(node);
+  }, [receivedRequestsPagination.isLoading, receivedRequestsPagination.hasMore, loadMoreReceivedRequests]);
 
   useEffect(() => {
-    getPendingRequests();
+    getPendingRequests(true);
   }, []);
-
-  const handleSeeMore = () => setVisibleCount((prev) => prev + 6);
 
   const handleAccept = async (id) => {
     try {
       await AcceptsTheRequests(id);
-      await getPendingRequests();
-      await getsendedRequests();
-      await getFriends();
+      await getPendingRequests(true);
+      await getsendedRequests(true);
+      await getFriends(true);
       toast.success("Friend request accepted");
     } catch {
       toast.error("Something went wrong");
@@ -40,9 +54,9 @@ export const RequestReceived = () => {
   const handleRemove = async (id) => {
     try {
       await removingFriendRequest(id);
-      await getPendingRequests();
-      await getsendedRequests();
-      await getFriends();
+      await getPendingRequests(true);
+      await getsendedRequests(true);
+      await getFriends(true);
       toast.success("Removed from requests");
     } catch (error) {
       toast.error(error.message);
@@ -55,19 +69,22 @@ export const RequestReceived = () => {
 
       {/* Requests List */}
       <div className="max-w-2xl mx-auto px-4 pb-20">
-        {friendRequests?.received?.length === 0 ? (
+        
+        
+        {friendRequests?.received?.length === 0 && !receivedRequestsPagination.isLoading ? (
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
               <Users className="h-8 w-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">No requests</h3>
-            <p className="text-gray-400">You don’t have any friend requests right now.</p>
+            <p className="text-gray-400">You don't have any friend requests right now.</p>
           </div>
         ) : (
           <div className="space-y-3 mt-4">
-            {friendRequests.received.slice(0, visibleCount).map((user) => (
+            {friendRequests.received.map((user, index) => (
               <div
                 key={user._id}
+                ref={index === friendRequests.received.length - 1 ? lastRequestRef : null}
                 className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-900/50 transition-colors"
               >
                 {/* Left */}
@@ -105,15 +122,11 @@ export const RequestReceived = () => {
           </div>
         )}
 
-        {/* See More */}
-        {friendRequests?.received?.length > visibleCount && (
-          <div className="text-center mt-6">
-            <button
-              onClick={handleSeeMore}
-              className="px-6 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors"
-            >
-              See more
-            </button>
+        {/* Loading Indicator */}
+        {receivedRequestsPagination.isLoading && (
+          <div className="text-center py-6">
+            <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-2 text-gray-400">Loading more requests...</p>
           </div>
         )}
       </div>

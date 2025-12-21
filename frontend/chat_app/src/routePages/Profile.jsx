@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, Edit, Settings, MapPin, Mail, Phone, Calendar, ArrowLeft, Search } from "lucide-react";
+import { Camera, Edit, Settings, MapPin, Mail, Calendar, ArrowLeft, Search } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import BottomNavbar from "../components/bottomNav/BottomNavbar";
 import { useThemeStore } from "../store/useThemeStore";
@@ -48,13 +48,35 @@ export const Profile = () => {
 
   const handleSaveProfile = async () => {
     try {
-      await updateProfile({ about: editedAbout });
+      const updates = {};
+      
+      // Only include changed fields
+      if (editedAbout !== (authUser?.about || "I am on Privex")) {
+        updates.about = editedAbout;
+      }
+      if (editedName !== authUser?.fullname) {
+        updates.fullname = editedName;
+      }
+      if (editedEmail !== (authUser?.email || "")) {
+        updates.email = editedEmail;
+      }
+      
+      if (Object.keys(updates).length === 0) {
+        toast.info("No changes to save");
+        return;
+      }
+      
+      await updateProfile(updates);
       setShowEditModal(false);
       toast.success("Profile updated successfully!");
     } catch (error) {
-      toast.error("Failed to update profile");
+      const errorMessage = error.response?.data?.message || "Failed to update profile";
+      toast.error(errorMessage);
     }
   };
+  const handleSettingsClick = () => {
+    navigate("/settings");
+  }
 
   return (
     <div className={`min-h-screen ${
@@ -142,6 +164,8 @@ export const Profile = () => {
                   <button 
                     onClick={() => {
                       setEditedAbout(authUser?.about || "I am on Privex");
+                      setEditedName(authUser?.fullname || "");
+                      setEditedEmail(authUser?.email || "");
                       setShowEditModal(true);
                     }}
                     className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -149,7 +173,7 @@ export const Profile = () => {
                     <Edit size={18} />
                     Edit Profile
                   </button>
-                  <button className={`p-2 ${theme === "dark" ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-200 hover:bg-gray-300"} rounded-lg transition`}>
+                  <button onClick={handleSettingsClick} className={`p-2 ${theme === "dark" ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-200 hover:bg-gray-300"} rounded-lg transition`}>
                     <Settings size={18} className={theme === "dark" ? "text-gray-300" : "text-gray-700"} />
                   </button>
                 </div>
@@ -168,6 +192,8 @@ export const Profile = () => {
               <button 
                 onClick={() => {
                   setEditedAbout(authUser?.about || "I am on Privex");
+                  setEditedName(authUser?.fullname || "");
+                  setEditedEmail(authUser?.email || "");
                   setShowEditModal(true);
                 }}
                 className="text-blue-600 hover:text-blue-700"
@@ -217,12 +243,46 @@ export const Profile = () => {
             <div className="space-y-4">
               <div>
                 <label className={`block text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-1`}>
+                  Full Name
+                </label>
+                <input 
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  maxLength={50}
+                  className={`w-full px-3 py-2 border ${
+                    theme === "dark" 
+                      ? "bg-gray-700 border-gray-600 text-white" 
+                      : "bg-white border-gray-300 text-gray-900"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-1`}>
+                  Email
+                </label>
+                <input 
+                  type="email"
+                  value={editedEmail}
+                  onChange={(e) => setEditedEmail(e.target.value)}
+                  className={`w-full px-3 py-2 border ${
+                    theme === "dark" 
+                      ? "bg-gray-700 border-gray-600 text-white" 
+                      : "bg-white border-gray-300 text-gray-900"
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  placeholder="Enter your email"
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"} mb-1`}>
                   About
                 </label>
                 <textarea 
                   value={editedAbout}
                   onChange={(e) => setEditedAbout(e.target.value)}
                   rows={4}
+                  maxLength={500}
                   className={`w-full px-3 py-2 border ${
                     theme === "dark" 
                       ? "bg-gray-700 border-gray-600 text-white" 
@@ -230,6 +290,9 @@ export const Profile = () => {
                   } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   placeholder="Tell us about yourself..."
                 />
+                <p className={`text-xs mt-1 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                  {editedAbout.length}/500 characters
+                </p>
               </div>
               <div className="flex gap-3 pt-4">
                 <button 

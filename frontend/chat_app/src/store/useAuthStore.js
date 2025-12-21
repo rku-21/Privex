@@ -32,10 +32,10 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  signup: async ({ fullname, email, password }) => {
+  signup: async ({ fullname, email, phone, password }) => {
     set({ isSigningUp: true });
     try {
-      const res = await axiosInstance.post("/auth/signup", { fullname, email, password });
+      const res = await axiosInstance.post("/auth/signup", { fullname, email, phone, password });
       set({ authUser: res.data });
       toast.success("Account Created Successfully");
       get().connectSocket();
@@ -58,6 +58,12 @@ export const useAuthStore = create((set, get) => ({
     } finally {
       set({ isLoginingUp: false });
     }
+  },
+
+  // Set authenticated user after OTP verification
+  setAuthUser: (user) => {
+    set({ authUser: user });
+    get().connectSocket();
   },
 
   updateProfile: async (data) => {

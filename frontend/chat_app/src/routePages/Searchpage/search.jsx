@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { X, SearchIcon } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { X, SearchIcon, Loader2 } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import BottomNavbar from "../../components/bottomNav/BottomNavbar";
@@ -10,81 +10,95 @@ const Search = () => {
   const { authUser } = useAuthStore();
 
   const {
-    getAllUsers,
-    Users,
+    searchUsers,
+    searchResults,
+    searchPagination,
+    loadMoreSearchResults,
     isUsersLoding,
     SendingFriendRequest,
     removingFriendRequest,
-    getsendedRequests,
-    getPendingRequests,
-    friends,
-    friendRequests,
-    getFriends,
   } = useChatStore();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [userStatus, setUserStatus] = useState({}); // 👈 Local instant status
+  const [userStatus, setUserStatus] = useState({});
+  const observerRef = useRef(null);
+  const debounceTimeout = useRef(null);
 
   const currentUser = authUser;
 
+  // Debounced search
   useEffect(() => {
-    getAllUsers();
-    getFriends();
-    getsendedRequests();
-    getPendingRequests();
-  }, []);
-
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredUsers([]);
-    } else {
-      const result = Users.filter((user) =>
-        user.fullname.toLowerCase().startsWith(searchQuery.toLowerCase())
-      );
-      setFilteredUsers(result.filter((user) => user._id !== currentUser._id));
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
     }
-  }, [searchQuery, Users]);
 
+    debounceTimeout.current = setTimeout(() => {
+      searchUsers(searchQuery, true);
+    }, 300); // 300ms debounce
+
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Update user status when data changes - now using backend relationshipStatus
   useEffect(() => {
-    // Update local status when friendRequests or friends change
+    if (!searchResults) return;
+    
+    console.log("Updating user status from backend relationshipStatus");
+    
     const newStatus = {};
-    filteredUsers.forEach((user) => {
-      if (friends.some((u) => u._id === user._id)) newStatus[user._id] = "friend";
-      else if (friendRequests.sent.some((u) => u._id === user._id))
-        newStatus[user._id] = "sent";
-      else if (friendRequests.received.some((u) => u._id === user._id))
-        newStatus[user._id] = "received";
-      else newStatus[user._id] = "none";
+    searchResults.forEach((user) => {
+      console.log(`${user.fullname}: ${user.relationshipStatus || "undefined"}`);
+      newStatus[user._id] = user.relationshipStatus || "none";
     });
     setUserStatus(newStatus);
-  }, [filteredUsers, friends, friendRequests]);
+  }, [searchResults]);
+
+  // Infinite scroll observer
+  const lastUserRef = useCallback(
+    (node) => {
+      if (searchPagination?.isLoading) return;
+      if (observerRef.current) observerRef.current.disconnect();
+
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && searchPagination?.hasMore) {
+          loadMoreSearchResults();
+        }
+      });
+
+      if (node) observerRef.current.observe(node);
+    },
+    [searchPagination?.isLoading, searchPagination?.hasMore, loadMoreSearchResults]
+  );
 
   // Send request (instant UI + backend)
   const SendRequest = async (userId) => {
+    console.log("Sending friend request to:", userId);
     setUserStatus((prev) => ({ ...prev, [userId]: "sent" })); // instant update
     try {
       await SendingFriendRequest(userId);
-      await getsendedRequests();
-      await getPendingRequests();
       toast.success("Friend request sent");
     } catch (error) {
+      console.error("Error sending friend request:", error);
       setUserStatus((prev) => ({ ...prev, [userId]: "none" })); // revert on fail
-      toast.error("Something went wrong");
+      toast.error(error.response?.data?.message || error.response?.data?.error || "Something went wrong");
     }
   };
 
   // Remove request (instant UI + backend)
   const removeRequest = async (userId) => {
+    console.log("Removing friend request to:", userId);
     setUserStatus((prev) => ({ ...prev, [userId]: "none" })); // instant update
     try {
       await removingFriendRequest(userId);
-      await getsendedRequests();
-      await getPendingRequests();
       toast.success("Friend request removed");
     } catch (error) {
+      console.error("Error removing friend request:", error);
       setUserStatus((prev) => ({ ...prev, [userId]: "sent" })); // revert on fail
-      toast.error("Something went wrong");
+      toast.error(error.response?.data?.message || error.response?.data?.error || "Something went wrong");
     }
   };
 
@@ -118,16 +132,18 @@ const Search = () => {
 
       {/* Results */}
       <div className="max-w-2xl mx-auto px-4 pb-20">
-        {isUsersLoding && <Loding />}
+        {isUsersLoding && (!searchResults || searchResults.length === 0) && <Loding />}
 
-        {!isUsersLoding && filteredUsers.length > 0 && (
+        {!isUsersLoding && searchResults && searchResults.length > 0 && (
           <div className="space-y-3 mt-4">
-            {filteredUsers.map((user) => {
+            {searchResults.map((user, index) => {
               const status = userStatus[user._id] || "none";
+              const isLastItem = index === searchResults.length - 1;
 
               return (
                 <div
                   key={user._id}
+                  ref={isLastItem ? lastUserRef : null}
                   className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-900/50 transition-colors"
                 >
                   {/* Left */}
@@ -175,8 +191,15 @@ const Search = () => {
             })}
           </div>
         )}
+        
+        {/* Loading indicator for pagination */}
+        {searchPagination?.isLoading && searchResults && searchResults.length > 0 && (
+          <div className="flex justify-center items-center py-4">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          </div>
+        )}
 
-        {!isUsersLoding && searchQuery && filteredUsers.length === 0 && (
+        {!isUsersLoding && searchQuery && (!searchResults || searchResults.length === 0) && (
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"></div>
             <h3 className="text-lg font-semibold mb-2">No users found</h3>

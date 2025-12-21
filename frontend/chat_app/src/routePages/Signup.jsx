@@ -1,37 +1,115 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Sun, Moon, Loader2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Eye, EyeOff, Sun, Moon, Loader2, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useThemeStore } from '../store/useThemeStore';
+import { axiosInstance } from '../lib/axios';
 
 
 export default function Signup() {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useThemeStore();
   const isDark = theme === 'dark';
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({ fullname: '', email: '', password: '', confirmPassword: '' });
-  const { signup, isSigningUp } = useAuthStore();
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState(1); // 1: signup form, 2: OTP verification
+  const [isLoading, setIsLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const { setAuthUser } = useAuthStore();
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
   const validForm = () => {
     if (!formData.fullname.trim()) return window.toast?.error('Name is required');
-    if (!formData.email.trim()) return window.toast?.error('Email is required');
+    if (!formData.email.trim()) {
+      return window.toast?.error('Email is required');
+    }
     if (!formData.password) return window.toast?.error('Password is required');
     if (formData.password.length <6) return window.toast?.error('Password must be at least 6 characters');
     if (formData.password !== formData.confirmPassword) return window.toast?.error('Passwords do not match');
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleRequestOTP = async (e) => {
     e.preventDefault();
-    console.log(formData); // Add this line
     const success = validForm();
-    if (success === true) {
-      const { confirmPassword, ...signupData} = formData;
-      signup(signupData);
+    if (success !== true) return;
+
+    setIsLoading(true);
+    try {
+      const { confirmPassword, ...signupData } = formData;
+      const res = await axiosInstance.post('/auth/request-signup', signupData);
+      window.toast?.success(res.data.message || 'OTP sent to your email!');
+      setStep(2);
+      setResendTimer(60); // 60 seconds cooldown
+      
+      // Start countdown
+      const interval = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      window.toast?.error(error.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    if (!otp.trim() || otp.length !== 6) {
+      return window.toast?.error('Please enter valid 6-digit OTP');
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await axiosInstance.post('/auth/verify-signup', {
+        email: formData.email,
+        otp: otp
+      });
+      
+      // Set auth user and connect socket
+      setAuthUser(res.data);
+      
+      window.toast?.success('Account created successfully!');
+      navigate('/');
+    } catch (error) {
+      window.toast?.error(error.response?.data?.message || 'Invalid OTP');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (resendTimer > 0) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await axiosInstance.post('/auth/resend-otp', { email: formData.email });
+      window.toast?.success(res.data.message || 'New OTP sent!');
+      setResendTimer(60);
+      
+      const interval = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      window.toast?.error(error.response?.data?.message || 'Failed to resend OTP');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,6 +155,16 @@ export default function Signup() {
         >
           {/* Heading */}
           <div className="flex flex-col items-center mb-8">
+            {step === 2 && (
+              <button
+                onClick={() => setStep(1)}
+                className={`self-start mb-4 flex items-center gap-2 ${
+                  isDark ? 'text-blue-400 hover:text-blue-300' : 'text-green-600 hover:text-green-500'
+                }`}
+              >
+                <ArrowLeft className="w-4 h-4" /> Back
+              </button>
+            )}
             <h2
               className={`text-2xl font-bold text-center bg-clip-text text-transparent ${
                 isDark
@@ -84,7 +172,7 @@ export default function Signup() {
                   : 'bg-gradient-to-r from-green-600 to-blue-600'
               }`}
             >
-              Create Account
+              {step === 1 ? 'Create Account' : 'Verify Email'}
             </h2>
             <p
               className={`text-sm text-center mt-2 bg-clip-text text-transparent ${
@@ -93,12 +181,13 @@ export default function Signup() {
                   : 'bg-gradient-to-r from-green-600 to-blue-600'
               }`}
             >
-              Join Privex and get started
+              {step === 1 ? 'Join Privex and get started' : `Enter the 6-digit code sent to ${formData.email}`}
             </p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Step 1: Signup Form */}
+          {step === 1 && (
+          <form onSubmit={handleRequestOTP} className="space-y-6">
             {/* Name */}
             <div>
               <label
@@ -225,22 +314,92 @@ export default function Signup() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={isSigningUp}
+              disabled={isLoading}
               className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] ${
                 isDark
                   ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50'
                   : 'bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-500 focus:ring-opacity-50'
               } shadow-lg hover:shadow-xl flex justify-center items-center`}
             >
-              {isSigningUp ? (
+              {isLoading ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Creating...
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Sending OTP...
                 </>
               ) : (
-                'Sign Up'
+                'Continue'
               )}
             </button>
           </form>
+          )}
+
+          {/* Step 2: OTP Verification */}
+          {step === 2 && (
+          <form onSubmit={handleVerifyOTP} className="space-y-6">
+            <div>
+              <label
+                htmlFor="otp"
+                className={`block text-sm font-medium mb-2 text-center ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+              >
+                Enter OTP
+              </label>
+              <input
+                type="text"
+                id="otp"
+                name="otp"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-center text-2xl tracking-widest font-bold ${
+                  isDark
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
+                } focus:ring-2 focus:ring-opacity-50`}
+                placeholder="000000"
+                maxLength={6}
+                required
+                autoFocus
+              />
+              <p className={`text-xs mt-2 text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                OTP valid for 10 minutes
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || otp.length !== 6}
+              className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] ${
+                isDark
+                  ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-600'
+                  : 'bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 disabled:bg-gray-400'
+              } shadow-lg hover:shadow-xl flex justify-center items-center disabled:cursor-not-allowed`}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Verifying...
+                </>
+              ) : (
+                'Verify & Create Account'
+              )}
+            </button>
+
+            {/* Resend OTP */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                disabled={resendTimer > 0 || isLoading}
+                className={`text-sm font-medium ${
+                  resendTimer > 0 || isLoading
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : isDark
+                    ? 'text-blue-400 hover:text-blue-300'
+                    : 'text-green-600 hover:text-green-500'
+                } transition-colors`}
+              >
+                {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+              </button>
+            </div>
+          </form>
+          )}
 
           {/* Already have account */}
           <div className="text-center mt-6">

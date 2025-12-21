@@ -51,6 +51,7 @@ export const Navbar = () => {
     const appLink = "https://privex-1.onrender.com";
     const shareData = {
       title: "Privex - Chat App",
+      
       text: "🚀 Hey! Check out Privex, a private chat app I'm using. Join me here 👇",
       url: appLink,
     };
