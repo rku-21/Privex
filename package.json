@@ -8,13 +8,13 @@
   "version": "1.0.0",
   "description": "This repository contains both the frontend and backend for the Privex chat application.",
   "main": "index.js",
- "scripts": {
-  "dev": "vite",
-  "build": "npm install --prefix backend && npm install --prefix frontend/chat_app && npm run build --prefix frontend/chat_app",
-  "start": "react-scripts start --host 0.0.0.0",
-  "lint": "eslint .",
-  "preview": "vite preview"
-},
+  "scripts": {
+    "dev": "npm run dev --prefix backend",
+    "build": "npm install --prefix backend && npm install --prefix frontend/chat_app && npm run build --prefix frontend/chat_app",
+    "start": "npm start --prefix backend",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
 
 
   "repository": {
