@@ -2,7 +2,8 @@ import User from '../models/user.model.js';
 import Message from '../models/message.model.js';
 import Friendship from '../models/friendShip.model.js';
 import cloudinary from '../lib/cloudinary.js';
-import { getReceiverSocketId,io } from '../lib/socket.js';
+import { getReceiverSocketId, io } from '../lib/socket.js';
+import { getUserSockets } from '../lib/redis.js';
 import mongoose from 'mongoose';
 
 
@@ -254,10 +255,13 @@ export const sendMessges = async (req, res) => {
 
     await newMessage.save();
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
-      console.log(`💬 Message sent via socket to user ${receiverId}`);
+    // 🚀 PRODUCTION: Send to ALL devices of the receiver
+    const receiverSocketIds = await getUserSockets(receiverId);
+    if (receiverSocketIds.length > 0) {
+      receiverSocketIds.forEach(socketId => {
+        io.to(socketId).emit("newMessage", newMessage);
+      });
+      console.log(`💬 Message sent to ${receiverSocketIds.length} device(s) of user ${receiverId}`);
     } else {
       console.log(`📵 User ${receiverId} is offline, message saved to DB`);
     }

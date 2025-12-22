@@ -7,7 +7,7 @@ import { useChatStore } from "./useChatStore";
 export const useCallStore=create((set,get)=>({
   peerConnection:null,
   localStream:null,
-  remoteStream:new MediaStream(),  // 🔥 ONE persistent stream - never replace, only add/remove tracks
+  remoteStream:null,
   incall:false,
   callType:null,
   isReceivingCall:false,
@@ -17,7 +17,8 @@ export const useCallStore=create((set,get)=>({
   isCallAccepted:false,
   onCallWithWhom:{},
   callTimeout: null,
-  currentCallId: null, // 🆕 Track current call session ID  pendingIce: [], // 🔥 Buffer for ICE candidates before callId arrives
+  currentCallId: null, // 🆕 Track current call session ID
+
   // Initialize ringtone
   initRingtone: () => {
     if (typeof window !== 'undefined' && !get().ringtoneAudio) {
@@ -59,8 +60,6 @@ export const useCallStore=create((set,get)=>({
   setPeerConnection:(pc)=>set({peerConnection:pc}),
   setInCall:(value)=>set({incall:value}),
   setCallType:(type)=>set({callType:type}),
-  setCurrentCallId:(id)=>set({currentCallId:id}),
-  setPendingIce:(ice)=>set({pendingIce:ice}),
 
  // End a call and clean up resources
 endCall: () => {
@@ -80,15 +79,6 @@ endCall: () => {
   if (localStream) localStream.getTracks().forEach(track => track.stop());
   if (peerConnection) peerConnection.close();
 
-  // 🔥 Clear remote stream tracks (don't replace the stream)
-  const remoteStream = get().remoteStream;
-  if (remoteStream) {
-    remoteStream.getTracks().forEach(track => {
-      remoteStream.removeTrack(track);
-      track.stop();
-    });
-  }
-
   // 🆕 Emit with callId (production way)
   if (socket && currentCallId) {
     socket.emit("call-ended", { callId: currentCallId });
@@ -99,7 +89,7 @@ endCall: () => {
   set({
     peerConnection: null,
     localStream: null,
-    // remoteStream stays as persistent MediaStream (just empty now)
+    remoteStream: null,
     incall: false,
     callType: null,
     isReceivingCall: false,
@@ -108,8 +98,7 @@ endCall: () => {
     isCallAccepted: false,
     onCallWithWhom: null,
     callTimeout: null,
-    currentCallId: null,  // 🆕 Clear callId
-    pendingIce: []  // 🔥 Clear pending ICE buffer
+    currentCallId: null  // 🆕 Clear callId
   });
   
   console.log("Call state completely reset, onCallWithWhom cleared");
@@ -130,7 +119,7 @@ endCall: () => {
   console.log("handleCallEnded function called - resetting all call state", reason ? `(Reason: ${reason})` : '');
   
   // Get current state
-  const { localStream, peerConnection, remoteStream } = get();
+  const { localStream, peerConnection } = get();
   
   // Clean up resources
   if (localStream) {
@@ -141,19 +130,11 @@ endCall: () => {
     peerConnection.close();
   }
 
-  // 🔥 Clear remote stream tracks (don't replace the stream)
-  if (remoteStream) {
-    remoteStream.getTracks().forEach(track => {
-      remoteStream.removeTrack(track);
-      track.stop();
-    });
-  }
-
   // Reset all call-related state
   set({
     peerConnection: null,
     localStream: null,
-    // remoteStream stays as persistent MediaStream (just empty now)
+    remoteStream: null,
     incall: false,
     callType: null,
     isReceivingCall: false,
@@ -162,7 +143,6 @@ endCall: () => {
     isCallAccepted: false,
     onCallWithWhom: null,
     currentCallId: null,  // 🆕 Clear callId
-    pendingIce: []  // 🔥 Clear pending ICE buffer
   });
   
   console.log("Call state reset complete, onCallWithWhom set to null");
@@ -170,6 +150,27 @@ endCall: () => {
   // Show appropriate message based on reason
   if (reason === 'timeout') {
     toast.error("Call timed out");
+  }  // Reset all state
+  set({
+    peerConnection: null,
+    localStream: null,
+    remoteStream: null,
+    incall: false,
+    callType: null,
+    isReceivingCall: false,
+    incomingCall: null,
+    isInitiating: false,
+    isCallAccepted: false,
+    onCallWithWhom: {}
+  });
+
+  // Clean up the chat container state
+  const chatStore = useChatStore.getState();
+  chatStore.setselectedUser(null);
+  
+  // Force a navigation to clear the UI state
+  if (typeof window !== 'undefined') {
+    window.history.pushState({}, '', '/');
   }
   
   console.log("Call state has been completely reset and selectedUser set to null");
@@ -280,31 +281,27 @@ endCall: () => {
       pc.addTrack(track, localStream);
     });
 
-    // 3️⃣ Get the persistent remote stream (DO NOT reset it)
-    const remoteStream = get().remoteStream;
-    console.log("Using persistent remote stream:", remoteStream.id);
+    // 3️⃣ Prepare remote stream
+    set({ remoteStream: null }); // Clear first
+    console.log("Remote stream prepared");
 
-    // Handle incoming tracks - add to existing stream, never replace
+    // Handle incoming tracks - use the stream from the event directly
     pc.ontrack = (event) => {
       console.log(`Received remote track: ${event.track.kind} [enabled: ${event.track.enabled}]`);
       
-      // 🔥 CRITICAL: Add tracks to existing stream, don't replace it
+      // Use the first stream from the event directly (this is the remote peer's stream)
       if (event.streams && event.streams[0]) {
-        event.streams[0].getTracks().forEach(track => {
-          // Check if track already exists
-          const alreadyAdded = remoteStream
-            .getTracks()
-            .some(t => t.id === track.id);
-          
-          if (!alreadyAdded) {
-            console.log(`Adding ${track.kind} track to remote stream:`, track.id);
-            remoteStream.addTrack(track);
-          } else {
-            console.log(`Track ${track.id} already in stream, skipping`);
-          }
-        });
+        const incomingStream = event.streams[0];
+        console.log("Using remote stream from event:", incomingStream.id);
+        console.log("Remote stream tracks:", incomingStream.getTracks().map(t => `${t.kind}:${t.id}`));
+        
+        // Set the remote stream only once when we first receive it
+        const currentRemote = get().remoteStream;
+        if (!currentRemote || currentRemote.id !== incomingStream.id) {
+          set({ remoteStream: incomingStream });
+          console.log("Remote stream set successfully");
+        }
       }
-      // 🔴 DO NOT set remoteStream again - this causes flickering
     };
     console.log("ontrack handler set up");
     
@@ -343,24 +340,16 @@ endCall: () => {
       }
     };
 
-    // 4️⃣ Handle ICE candidates - MUST check callId exists before sending
+    // 4️⃣ Handle ICE candidates - will be updated after receiving callId from server
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        const { currentCallId, pendingIce } = get();
-        if (!currentCallId) {
-          console.warn("🔶 ICE candidate generated before callId - buffering");
-          // 🔥 BUFFER ICE until callId arrives (max 20 to prevent memory leak)
-          if (pendingIce.length < 20) {
-            pendingIce.push(event.candidate);
-            set({ pendingIce: [...pendingIce] });
-          }
-          return;
+        const { currentCallId } = get();
+        if (currentCallId) {
+          socket.emit("ice-candidate", {
+            callId: currentCallId,  // 🆕 Use callId instead of userId
+            candidate: event.candidate,
+          });
         }
-        socket.emit("ice-candidate", {
-          callId: currentCallId,
-          candidate: event.candidate,
-        });
-        console.log("✅ ICE candidate sent with callId:", currentCallId);
       }
     };
     console.log("icecandidate handler set up");
@@ -438,42 +427,39 @@ endCall: () => {
       });
     }
     
-    // 3. Get the persistent remote stream (DO NOT reset it)
-    const remoteStream = get().remoteStream;
-    console.log("Using persistent remote stream:", remoteStream.id);
+    // 3. Set up remote stream for incoming media
+    set({ remoteStream: null }); // Clear first
     
-    // 4. Setup track handler - add tracks to existing stream, never replace
+    // 4. Setup track handler - use the stream from event directly
     pc.ontrack = (event) => {
       console.log(`Remote track received: ${event.track.kind} [enabled: ${event.track.enabled}]`);
       
-      // 🔥 CRITICAL: Add tracks to existing stream, don't replace it
+      // Use the remote stream from the event directly
       if (event.streams && event.streams[0]) {
-        event.streams[0].getTracks().forEach(track => {
-          // Check if track already exists
-          const alreadyAdded = remoteStream
-            .getTracks()
-            .some(t => t.id === track.id);
-          
-          if (!alreadyAdded) {
-            console.log(`Adding ${track.kind} track to remote stream:`, track.id);
-            remoteStream.addTrack(track);
-            
-            // Debug log for audio tracks
-            if (track.kind === 'audio') {
-              console.log("Audio Track State:", {
-                id: track.id,
-                label: track.label,
-                enabled: track.enabled,
-                muted: track.muted,
-                readyState: track.readyState
-              });
-            }
-          } else {
-            console.log(`Track ${track.id} already in stream, skipping`);
-          }
+        const incomingStream = event.streams[0];
+        console.log("Using remote stream from event:", incomingStream.id);
+        console.log("Remote stream tracks:", incomingStream.getTracks().map(t => `${t.kind}:${t.id}`));
+        
+        // Set the remote stream only once when we first receive it
+        const currentRemote = get().remoteStream;
+        if (!currentRemote || currentRemote.id !== incomingStream.id) {
+          set({ remoteStream: incomingStream });
+          console.log("Remote stream set successfully");
+        }
+        
+        // Debug log for audio tracks
+        const audioTracks = incomingStream.getAudioTracks();
+        console.log(`Remote stream has ${audioTracks.length} audio tracks`);
+        audioTracks.forEach(track => {
+          console.log("Audio Track State:", {
+            id: track.id,
+            label: track.label,
+            enabled: track.enabled,
+            muted: track.muted,
+            readyState: track.readyState
+          });
         });
       }
-      // 🔴 DO NOT set remoteStream again - this causes flickering
 
       // Monitor track ended events
       event.track.onended = () => {
@@ -526,18 +512,14 @@ endCall: () => {
       }
     };
     
-    // 5. Set up ICE candidate handler - MUST check callId exists
+    // 5. Set up ICE candidate handler
     pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        if (!callId) {
-          console.warn("🔴 ICE candidate generated but callId not available - skipping");
-          return; // 🔴 CRITICAL: Don't send ICE until we have callId
-        }
+      if (event.candidate && socket) {
+        console.log("Sending ICE candidate to caller");
         socket.emit("ice-candidate", {
-          callId: callId,
+          callId: callId,  // 🆕 Use callId instead of userId
           candidate: event.candidate,
         });
-        console.log("✅ ICE candidate sent with callId:", callId);
       }
     };
     
@@ -603,8 +585,7 @@ rejectCall:()=>{
     callType: null,
     isInitiating: false,
     isCallAccepted: false,
-    currentCallId: null,  // 🆕 Clear callId
-    pendingIce: []  // 🔥 Clear pending ICE buffer
+    currentCallId: null  // 🆕 Clear callId
   });
   
   console.log("Call state completely reset after rejection");

@@ -1,156 +1,413 @@
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
+import { randomUUID } from "crypto";
 import User from "../models/user.model.js";
+import { addUserSocket, removeUserSocket, getUserSockets, getOnlineUsers } from "./redis.js";
 
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin:"http://localhost:5173",
+    origin: "http://localhost:5173",
     credentials: true,
   },
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
-const userSocketMap = {};
+// ============================================
+// PRODUCTION CALL STATE MANAGEMENT
+// ============================================
+// In-memory call sessions (short-lived, can move to Redis later)
+const activeCalls = new Map();
+const callTimeouts = new Map();
 
-export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
+const CALL_TIMEOUT_MS = 30000; // 30 seconds
+const MAX_ICE_BUFFER_SIZE = 50;
+
+// Call states: "ringing" | "accepted" | "ended"
+
+/**
+ * Emit event to ALL devices of a user (multi-device support)
+ * @param {string} userId 
+ * @param {string} event 
+ * @param {object} payload 
+ */
+async function emitToUser(userId, event, payload) {
+  try {
+    const socketIds = await getUserSockets(userId);
+    if (socketIds.length === 0) {
+      console.log(`⚠️ User ${userId} has no active sockets`);
+      return false;
+    }
+    socketIds.forEach(socketId => {
+      io.to(socketId).emit(event, payload);
+    });
+    console.log(`✅ Emitted ${event} to user ${userId} (${socketIds.length} devices)`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Error emitting to user ${userId}:`, error);
+    return false;
+  }
 }
 
-io.on("connection", (socket) => {
+/**
+ * Clean up call state and timers
+ * @param {string} callId 
+ */
+function cleanupCall(callId) {
+  if (callTimeouts.has(callId)) {
+    clearTimeout(callTimeouts.get(callId));
+    callTimeouts.delete(callId);
+  }
+  activeCalls.delete(callId);
+  console.log(`🧹 Cleaned up call ${callId}`);
+}
+
+// ============================================
+// SOCKET CONNECTION HANDLER
+// ============================================
+io.on("connection", async (socket) => {
   const userId = socket.handshake.query.userId;
-  if (!userId) {
-    console.log("User connected without userId");
+  
+  if (!userId || userId === "undefined" || userId === "null") {
+    console.log("❌ User connected without valid userId:", userId);
+    socket.disconnect(true);
     return;
   }
 
-  console.log(`User connected: ${userId}, socketId: ${socket.id}`);
+  console.log(`✅ User connected: ${userId}, socketId: ${socket.id}`);
+  
+  try {
+    // Add to Redis (multi-device support)
+    await addUserSocket(userId, socket.id);
+    socket.userId = userId;
 
-  userSocketMap[userId] = socket.id;
-  console.log(`Mapped userId ${userId} to socketId ${socket.id}`);
-  console.log(`Current online users: ${Object.keys(userSocketMap).join(', ')}`);
+    // Broadcast updated online users to all clients
+    const onlineUsers = await getOnlineUsers();
+    console.log(`📢 Broadcasting online users:`, onlineUsers);
+    io.emit("getOnlineUsers", onlineUsers);
+  } catch (error) {
+    console.error("❌ Error connecting user socket:", error);
+    socket.emit("connection-error", { message: "Failed to register connection" });
+  }
 
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+  // ============================================
+  // CALL EVENTS - PRODUCTION READY
+  // ============================================
 
+  /**
+   * STEP 1: Initiate Call
+   * Frontend emits: { to, offer, callType, from }
+   */
+  socket.on("call-user", async ({ to, offer, callType, from }) => {
+    try {
+      console.log(`📞 [CALL-USER] ${from} calling ${to} (${callType})`);
 
-  // going to handle the call events here 
-    // =============================
-  // going to handle the call events here
+      // Validate inputs
+      if (!to || !offer || !from) {
+        console.error("❌ Invalid call-user payload");
+        return;
+      }
 
-// Handle call timeout
-  socket.on("call-timeout", ({ to, from }) => {
-    const receiverSocketId = getReceiverSocketId(to);
-    console.log("[SERVER] Call timeout event received. From:", from, "To:", to);
-    console.log("[SERVER] Receiver socket ID:", receiverSocketId);
-    
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("call-timeout", { from });
-      console.log("[SERVER] call-timeout event forwarded to socket:", receiverSocketId);
-    } else {
-      console.error("[SERVER] Could not find socket for user:", to);
-    }
-  });
+      // Fetch caller details
+      const caller = await User.findById(from).select("fullname profilePicture");
+      if (!caller) {
+        console.error(`❌ Caller ${from} not found in database`);
+        socket.emit("call-error", { message: "Caller not found" });
+        return;
+      }
 
-  //  when a user wants to call another its emit is in frontend
-  socket.on("call-user",async({to,offer,callType,from})=>{
-    console.log("call-user  event receiverd:", to, "from:", from);
-    const caller= await User.findById(from).select("fullname profilePicture");
-    // if(!caller){
-    //   console.error("Caller not found for ID:", from);
-    // }
-    const targetId=userSocketMap[to];
-    if(targetId){
-      io.to(targetId).emit("incoming-call",{
-        from:{_id:from,fullname:caller.fullname,profilePicture:caller.profilePicture},
+      // Create unique call session
+      const callId = randomUUID();
+      
+      activeCalls.set(callId, {
+        callId,
+        callerId: from,
+        receiverId: to,
+        callType,
+        status: "ringing",
+        iceCandidates: [], // Buffer for early ICE candidates
+        createdAt: Date.now(),
+      });
+
+      // Set automatic timeout (30 seconds)
+      const timeout = setTimeout(async () => {
+        const call = activeCalls.get(callId);
+        if (call && call.status === "ringing") {
+          console.log(`⏱️ Call ${callId} timed out`);
+          
+          await emitToUser(call.callerId, "call-timeout", { callId });
+          await emitToUser(call.receiverId, "call-timeout", { callId });
+          
+          cleanupCall(callId);
+        }
+      }, CALL_TIMEOUT_MS);
+
+      callTimeouts.set(callId, timeout);
+
+      // Emit to receiver (all devices)
+      const sent = await emitToUser(to, "incoming-call", {
+        callId,
+        from: {
+          _id: from,
+          fullname: caller.fullname,
+          profilePicture: caller.profilePicture,
+        },
         callType,
         offer,
-
-      })
-    }
-  });
-
-
-  // when the called user answers the call
-  socket.on("answer-call",({to,answer})=>{
-    console.log("answer-call event received for:", to);
-    console.log("Finding socket for user ID:", to);
-    const targetId = userSocketMap[to];
-    
-    if(targetId){
-      console.log("Emitting call-accepted to socket ID:", targetId);
-      io.to(targetId).emit("call-accepted", {
-        answer
       });
-      console.log("call-accepted event emitted with answer");
-    } else {
-      console.error("Cannot emit call-accepted: Target user not found in socket map");
-      console.log("Available users in socket map:", Object.keys(userSocketMap));
-    }
-  })
 
-  // if call is accepted then we will exchange the ice candidates \
-  // both the receiver and caller will emit ice candidates when found and this handler will exchange them
-  socket.on("ice-candidate",({to,candidate})=>{
-    console.log("ice-candidate event received for:", to,candidate);
-    const targetId=userSocketMap[to];
-    if(targetId){
-      io.to(targetId).emit("ice-candidate",{
-        candidate
-      });
-    }
-  });
-
-
-  // if the user is rejecting the call
-  socket.on("reject-call",({to})=>{
-    console.log("reject-call event received for:", to);
-    const targetId=userSocketMap[to];
-    if(targetId){
-      console.log("Emitting call-rejected to:", targetId);
-      io.to(targetId).emit("call-rejected");
-    } else {
-      console.log("Target user not online, cannot send call rejection");
-    }
-  });
-
-  // handle the call ended event 
-  socket.on("call-ended",({to})=>{
-    console.log("call-ended event received for:", to);
-    const targetId=userSocketMap[to];
-    if(targetId){
-      io.to(targetId).emit("call-ended");
-    }
-  });
-
-  // listen for the senerio when the caller itself cancels the call before being answered
-  socket.on("cancel-call",({to})=>{
-    console.log("cancel-call event received for:", to);
-    const targetId=userSocketMap[to];
-    if(targetId){
-      io.to(targetId).emit("call-cancelled");
-    }
-  });
-
-
-
-  socket.on("disconnect", () => {
-    console.log(`User disconnected: ${userId}`);
-    
-    // Notify any peers in active calls with this user that the call has ended
-    for (const [peerId, peerSocketId] of Object.entries(userSocketMap)) {
-      if (peerId !== userId) {
-        // Send call-ended event to any potential peers
-        io.to(peerSocketId).emit("peer-disconnected", { userId });
+      if (!sent) {
+        console.log(`⚠️ Receiver ${to} is offline`);
+        socket.emit("call-error", { message: "User is offline" });
+        cleanupCall(callId);
+      } else {
+        // 🆕 Send callId back to caller so they can track it
+        socket.emit("call-initiated", { callId });
+        console.log(`✅ Call ${callId} initiated successfully, callId sent to caller`);
       }
+    } catch (error) {
+      console.error("❌ Error in call-user:", error);
+      socket.emit("call-error", { message: "Failed to initiate call" });
     }
-    
-    if (userId && userSocketMap[userId]) delete userSocketMap[userId];
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+  });
+
+  /**
+   * STEP 2: Answer Call
+   * Frontend emits: { callId, answer }
+   */
+  socket.on("answer-call", async ({ callId, answer }) => {
+    try {
+      console.log(`✅ [ANSWER-CALL] Call ${callId} answered`);
+
+      const call = activeCalls.get(callId);
+      if (!call) {
+        console.error(`❌ Call ${callId} not found or already ended`);
+        socket.emit("call-error", { message: "Call not found" });
+        return;
+      }
+
+      if (call.status !== "ringing") {
+        console.error(`❌ Call ${callId} is not in ringing state (status: ${call.status})`);
+        return;
+      }
+
+      // Update call status
+      call.status = "accepted";
+      
+      // Clear timeout
+      if (callTimeouts.has(callId)) {
+        clearTimeout(callTimeouts.get(callId));
+        callTimeouts.delete(callId);
+      }
+
+      // Send answer to caller (all devices)
+      await emitToUser(call.callerId, "call-accepted", {
+        callId,
+        answer,
+      });
+
+      // Flush buffered ICE candidates to caller
+      if (call.iceCandidates.length > 0) {
+        console.log(`📤 Flushing ${call.iceCandidates.length} buffered ICE candidates`);
+        
+        for (const ice of call.iceCandidates) {
+          await emitToUser(call.callerId, "ice-candidate", {
+            callId,
+            candidate: ice.candidate,
+            from: ice.from,
+          });
+        }
+        
+        call.iceCandidates = [];
+      }
+
+      console.log(`✅ Call ${callId} accepted successfully`);
+    } catch (error) {
+      console.error("❌ Error in answer-call:", error);
+    }
+  });
+
+  /**
+   * STEP 3: ICE Candidate Exchange (with buffering)
+   * Frontend emits: { callId, candidate }
+   */
+  socket.on("ice-candidate", async ({ callId, candidate }) => {
+    try {
+      const call = activeCalls.get(callId);
+      if (!call) {
+        console.log(`⚠️ ICE candidate received for unknown call ${callId}`);
+        return;
+      }
+
+      const isFromCaller = socket.userId === call.callerId;
+      const targetUserId = isFromCaller ? call.receiverId : call.callerId;
+
+      // If call not yet accepted, buffer ICE candidates
+      if (call.status === "ringing") {
+        if (call.iceCandidates.length >= MAX_ICE_BUFFER_SIZE) {
+          console.warn(`⚠️ ICE buffer full for call ${callId}, dropping candidate`);
+          return;
+        }
+        
+        call.iceCandidates.push({
+          candidate,
+          from: socket.userId,
+          timestamp: Date.now(),
+        });
+        
+        console.log(`📦 Buffered ICE candidate for call ${callId} (${call.iceCandidates.length} total)`);
+      } else if (call.status === "accepted") {
+        // Call active, forward immediately
+        await emitToUser(targetUserId, "ice-candidate", {
+          callId,
+          candidate,
+        });
+        
+        console.log(`📡 Forwarded ICE candidate for call ${callId}`);
+      }
+    } catch (error) {
+      console.error("❌ Error handling ICE candidate:", error);
+    }
+  });
+
+  /**
+   * STEP 4: Reject Call
+   * Frontend emits: { callId }
+   */
+  socket.on("reject-call", async ({ callId }) => {
+    try {
+      console.log(`❌ [REJECT-CALL] Call ${callId} rejected`);
+
+      const call = activeCalls.get(callId);
+      if (!call) {
+        console.log(`⚠️ Call ${callId} not found`);
+        return;
+      }
+
+      // Notify caller
+      await emitToUser(call.callerId, "call-rejected", { callId });
+
+      // Cleanup
+      cleanupCall(callId);
+    } catch (error) {
+      console.error("❌ Error in reject-call:", error);
+    }
+  });
+
+  /**
+   * STEP 5: Cancel Call (before answer)
+   * Frontend emits: { callId }
+   */
+  socket.on("cancel-call", async ({ callId }) => {
+    try {
+      console.log(`🚫 [CANCEL-CALL] Call ${callId} cancelled by caller`);
+
+      const call = activeCalls.get(callId);
+      if (!call) {
+        console.log(`⚠️ Call ${callId} not found`);
+        return;
+      }
+
+      // Notify receiver
+      await emitToUser(call.receiverId, "call-cancelled", { callId });
+
+      // Cleanup
+      cleanupCall(callId);
+    } catch (error) {
+      console.error("❌ Error in cancel-call:", error);
+    }
+  });
+
+  /**
+   * STEP 6: End Active Call
+   * Frontend emits: { callId }
+   */
+  socket.on("call-ended", async ({ callId }) => {
+    try {
+      console.log(`📴 [CALL-ENDED] Call ${callId} ended by user ${socket.userId}`);
+
+      const call = activeCalls.get(callId);
+      if (!call) {
+        console.log(`⚠️ Call ${callId} not found (already cleaned up)`);
+        return;
+      }
+
+      // CRITICAL: Notify BOTH parties immediately (don't check who called it)
+      console.log(`📢 Sending call-ended to caller: ${call.callerId}`);
+      await emitToUser(call.callerId, "call-ended", { callId });
+      
+      console.log(`📢 Sending call-ended to receiver: ${call.receiverId}`);
+      await emitToUser(call.receiverId, "call-ended", { callId });
+
+      // Cleanup
+      cleanupCall(callId);
+      console.log(`✅ Call ${callId} completely terminated`);
+    } catch (error) {
+      console.error("❌ Error in call-ended:", error);
+    }
+  });
+
+  // ============================================
+  // DISCONNECT HANDLER
+  // ============================================
+  socket.on("disconnect", async () => {
+    console.log(`👋 User disconnected: ${userId}, socketId: ${socket.id}`);
+
+    try {
+      // Remove from Redis
+      await removeUserSocket(socket.id);
+
+      // Check if user has other devices online
+      const remainingSockets = await getUserSockets(userId);
+      
+      if (remainingSockets.length === 0) {
+        console.log(`🔴 User ${userId} fully offline (all devices disconnected)`);
+        
+        // End any active calls involving this user
+        for (const [callId, call] of activeCalls.entries()) {
+          if (call.callerId === userId || call.receiverId === userId) {
+            console.log(`📴 Auto-ending call ${callId} due to user disconnect`);
+            
+            const otherUserId = call.callerId === userId ? call.receiverId : call.callerId;
+            await emitToUser(otherUserId, "peer-disconnected", { callId, userId });
+            
+            cleanupCall(callId);
+          }
+        }
+      } else {
+        console.log(`🟡 User ${userId} still online on ${remainingSockets.length} other device(s)`);
+      }
+
+      // Broadcast updated online users
+      const onlineUsers = await getOnlineUsers();
+      console.log(`📢 Broadcasting online users after disconnect:`, onlineUsers);
+      io.emit("getOnlineUsers", onlineUsers);
+    } catch (error) {
+      console.error("❌ Error handling disconnect:", error);
+    }
   });
 });
 
+// ============================================
+// LEGACY SUPPORT FOR MESSAGE CONTROLLER
+// ============================================
+/**
+ * Get first available socket for a user (backward compatibility)
+ * @param {string} userId 
+ * @returns {Promise<string|null>}
+ */
+export async function getReceiverSocketId(userId) {
+  const socketIds = await getUserSockets(userId);
+  return socketIds[0] || null; // Return first device's socket ID
+}
+
+// ============================================
+// EXPORTS
+// ============================================
 export { io, app, server };
 // Yes, Rahul — this backend socket code is looking **very solid** and essentially complete for a basic WebRTC signaling server. ✅
 

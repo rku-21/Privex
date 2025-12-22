@@ -14,18 +14,43 @@ const VideoPlayer = ({
     const videoElement = videoRef.current;
     if (!videoElement || !stream) return;
 
-    // Log for debugging
-    if (enableDebug) {
-      console.log(`VideoPlayer: attaching stream ${stream.id}`);
-      console.log(`VideoPlayer: stream has tracks:`, stream.getTracks().map(t => 
-        `${t.kind}:${t.id} (${t.enabled ? 'enabled' : 'disabled'})`
-      ));
-    }
+    // 🔥 CRITICAL: Only attach if srcObject is different
+    // This prevents flickering when tracks are added to the same stream
+    if (videoElement.srcObject !== stream) {
+      // Log for debugging
+      if (enableDebug) {
+        console.log(`VideoPlayer: attaching stream ${stream.id}`);
+        console.log(`VideoPlayer: stream has tracks:`, stream.getTracks().map(t => 
+          `${t.kind}:${t.id} (${t.enabled ? 'enabled' : 'disabled'})`
+        ));
+      }
 
-    // Set stream to element
-    videoElement.srcObject = stream;
+      // Set stream to element
+      videoElement.srcObject = stream;
+      
+      // Set muted property
+      videoElement.muted = muted;
+
+      // Play the video
+      const playVideo = async () => {
+        try {
+          await videoElement.play();
+          if (enableDebug) {
+            console.log('VideoPlayer: video playing successfully');
+          }
+        } catch (err) {
+          console.warn('VideoPlayer: Failed to play video:', err.message);
+        }
+      };
+
+      if (autoPlay) {
+        playVideo();
+      }
+    } else if (enableDebug) {
+      console.log('VideoPlayer: stream already attached, skipping re-attach');
+    }
     
-    // Force enable all video tracks
+    // Force enable all video tracks (run every time to handle track changes)
     stream.getVideoTracks().forEach(track => {
       if (!track.enabled) {
         track.enabled = true;
@@ -34,25 +59,6 @@ const VideoPlayer = ({
         }
       }
     });
-
-    // Set muted property
-    videoElement.muted = muted;
-
-    // Play the video
-    const playVideo = async () => {
-      try {
-        await videoElement.play();
-        if (enableDebug) {
-          console.log('VideoPlayer: video playing successfully');
-        }
-      } catch (err) {
-        console.warn('VideoPlayer: Failed to play video:', err.message);
-      }
-    };
-
-    if (autoPlay) {
-      playVideo();
-    }
 
     return () => {
       // Cleanup when unmounted

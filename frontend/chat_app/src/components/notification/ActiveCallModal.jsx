@@ -71,17 +71,14 @@ const ActiveCallModal = () => {
       console.log("No socket available, cannot emit call-ended");
     }
 
-    if (callStore.isCallAccepted && selectedUser && selectedUser._id) {
-      console.log(
-        "ending an active call and emitting call-ended to:",
-        selectedUser._id
-      );
-      socket.emit("call-ended", { to: selectedUser._id });
+    if (callStore.isCallAccepted && callStore.currentCallId) {
+      console.log("ending an active call and emitting call-ended with callId:", callStore.currentCallId);
+      socket.emit("call-ended", { callId: callStore.currentCallId });
     } else {
-      console.log("Call was not in accepted state or no selected user");
+      console.log("Call was not in accepted state or no callId");
     }
 
-    // End call will clean up resources and set selectedUser to null
+    // End call will clean up resources
     endCall();
   };
 
@@ -93,20 +90,20 @@ const ActiveCallModal = () => {
           {/* Remote Video Fullscreen */}
           <video
             ref={(videoElement) => {
-              if (
-                videoElement &&
-                remoteStream &&
-                videoElement.srcObject !== remoteStream
-              ) {
+              if (videoElement && remoteStream) {
                 console.log(
                   "Setting remote stream to video element:",
-                  remoteStream.id
+                  remoteStream.id,
+                  "Tracks:",
+                  remoteStream.getTracks().map(t => t.kind)
                 );
                 videoElement.srcObject = remoteStream;
+                videoElement.play().catch(err => console.error("Remote video play error:", err));
               }
             }}
             autoPlay
             playsInline
+            muted={false}
             className="w-full h-full object-cover"
           />
 
@@ -193,39 +190,14 @@ const ActiveCallModal = () => {
             ref={(audioElement) => {
               if (audioElement && remoteStream) {
                 console.log("Setting up audio stream...");
-                // Ensure we have audio tracks
                 const audioTracks = remoteStream.getAudioTracks();
                 console.log("Audio tracks available:", audioTracks.length);
-                audioTracks.forEach(track => {
-                  console.log(`Audio track: enabled=${track.enabled}, muted=${track.muted}, readyState=${track.readyState}`);
-                });
                 
                 if (audioElement.srcObject !== remoteStream) {
                   console.log("Setting remote stream to audio element");
                   audioElement.srcObject = remoteStream;
-                  audioElement.volume = 1.0;  // Ensure volume is at maximum
-                  
-                  // Try playing with user interaction handling
-                  const playAudio = async () => {
-                    try {
-                      await audioElement.play();
-                      console.log("Audio playback started successfully");
-                    } catch (err) {
-                      console.error("Error playing audio:", err);
-                      // If autoplay fails, we might need user interaction
-                      if (err.name === "NotAllowedError") {
-                        console.log("Autoplay failed, might need user interaction");
-                      }
-                    }
-                  };
-                  
-                  playAudio();
-                  
-                  // Monitor audio state
-                  audioElement.onplay = () => console.log("Audio started playing");
-                  audioElement.onpause = () => console.log("Audio paused");
-                  audioElement.onended = () => console.log("Audio ended");
-                  audioElement.onerror = (e) => console.error("Audio error:", e);
+                  audioElement.volume = 1.0;
+                  audioElement.play().catch(err => console.error("Error playing audio:", err));
                 }
               }
             }}

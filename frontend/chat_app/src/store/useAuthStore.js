@@ -130,7 +130,7 @@ export const useAuthStore = create((set, get) => ({
     // Handle connection events
     newSocket.on("connect", () => {
       console.log(`Socket connected with ID: ${newSocket.id}`);
-      toast.success("Connected to chat server");
+      // Removed toast to prevent spam on reconnects
     });
     
     newSocket.on("connect_error", (error) => {
@@ -149,38 +149,45 @@ export const useAuthStore = create((set, get) => ({
     set({ socket: newSocket });
 
     newSocket.on("getOnlineUsers", (userIds) => {
+      console.log("📥 Received online users:", userIds);
       set({ onlineUsers: userIds });
     });
 
 
 
       // Handle call rejected
-    // Handle call rejection
     newSocket.on("call-rejected", () => {
       console.log("Call was rejected by the callee");
       toast.error("Your call was rejected");
       // Clean up resources
       useCallStore.getState().endCall();
     });
-
-    // Also handle the reject-call event (for backward compatibility)
-    newSocket.on("reject-call", () => {
-      console.log("Call was rejected by the callee (via reject-call event)");
-      toast.error("Your call was rejected");
-      // Clean up resources
-      useCallStore.getState().endCall();
-    });
-    
-    // Log all socket events for debugging
-    newSocket.onAny((event, ...args) => {
-      console.log(`[Socket Event] ${event}:`, args);
-    });
-
-
     // Handle call events
+    // 🆕 Handle call initiated confirmation (caller receives callId from server)
+    newSocket.on("call-initiated", (data) => {
+      console.log("✅ Call initiated, received callId from server:", data.callId);
+      const callStore = useCallStore.getState();
+      callStore.setCurrentCallId(data.callId);
+      
+      // 🔥 FLUSH PENDING ICE CANDIDATES
+      const pendingIce = callStore.pendingIce || [];
+      if (pendingIce.length > 0) {
+        console.log(`✅ Flushing ${pendingIce.length} buffered ICE candidates`);
+        pendingIce.forEach(candidate => {
+          newSocket.emit("ice-candidate", {
+            callId: data.callId,
+            candidate: candidate
+          });
+        });
+        callStore.setPendingIce([]);
+      }
+      
+      console.log("✅ currentCallId set, ICE candidates can now be sent");
+    });
+
     // Handle incoming call events
     newSocket.on("incoming-call", (data) => {
-      console.log("Incoming call received:", data);
+      console.log("🆕 Incoming call received with callId:", data.callId);
       // Use the proper store action to update call state
       const callStore = useCallStore.getState();
       callStore.handleIncomingCall(data);
@@ -195,41 +202,24 @@ export const useAuthStore = create((set, get) => ({
 
     // Handle call timeout
     newSocket.on("call-timeout", (data) => {
-      console.log("[CALLEE] Received call-timeout event:", data);
+      console.log("🆕 [CLIENT] Received call-timeout event for callId:", data.callId);
       const callStore = useCallStore.getState();
 
-      // First stop any ringing sound
+      // Stop any ringing sound
       callStore.stopRingtone();
-
-      // Force immediate state reset for UI
-      callStore.set({
-        peerConnection: null,
-        localStream: null,
-        remoteStream: null,
-        incall: false,
-        callType: null,
-        isReceivingCall: false,
-        incomingCall: null,
-        isInitiating: false,
-        isCallAccepted: false,
-        onCallWithWhom: null  // Explicitly set to null
-      });
       
-      // Show notification to user
-      toast.error("Call timed out", { 
-        id: 'call-timeout',
-        duration: 3000
-      });
+      // 🔴 FIX: Use CallStore's handleCallEnded, not AuthStore's set()
+      callStore.handleCallEnded("timeout");
       
-      console.log("[CALLEE] Call state completely reset, onCallWithWhom cleared");
+      console.log("[CLIENT] Call state completely reset after timeout");
     });
 
     // Handle call accepted
     newSocket.on("call-accepted", (data) => {
-      console.log("Call accepted by callee:", data);
+      console.log("🆕 Call accepted for callId:", data.callId);
       
       // Get the current peer connection
-      const { peerConnection } = useCallStore.getState();
+      const { peerConnection, currentCallId } = useCallStore.getState();
       
       if (!peerConnection) {
         console.error("Received call-accepted but no peer connection exists");
@@ -239,6 +229,11 @@ export const useAuthStore = create((set, get) => ({
       if (!data || !data.answer) {
         console.error("Received call-accepted but no answer data");
         return;
+      }
+      
+      // Verify callId matches (optional but recommended)
+      if (data.callId && currentCallId && data.callId !== currentCallId) {
+        console.warn("CallId mismatch! Expected:", currentCallId, "Got:", data.callId);
       }
       
       console.log("Setting remote description with answer");
@@ -256,8 +251,8 @@ export const useAuthStore = create((set, get) => ({
 
     // Handle ICE candidates
     newSocket.on("ice-candidate", (data) => {
-      console.log("ICE candidate received:", data.candidate);
-      const { peerConnection } = useCallStore.getState();
+      console.log("🆕 ICE candidate received for callId:", data.callId);
+      const { peerConnection, currentCallId } = useCallStore.getState();
       
       if (!peerConnection) {
         console.error("Received ICE candidate but no peer connection exists");
@@ -267,6 +262,11 @@ export const useAuthStore = create((set, get) => ({
       if (!data || !data.candidate) {
         console.error("Invalid ICE candidate data received");
         return;
+      }
+      
+      // Verify callId matches (optional but recommended)
+      if (data.callId && currentCallId && data.callId !== currentCallId) {
+        console.warn("CallId mismatch in ICE! Expected:", currentCallId, "Got:", data.callId);
       }
       
       try {
@@ -285,8 +285,8 @@ export const useAuthStore = create((set, get) => ({
    
     
     // Handle call ended event
-    newSocket.on("call-ended", () => {
-      console.log("Call ended by remote peer");
+    newSocket.on("call-ended", (data) => {
+      console.log("🆕 Call ended for callId:", data.callId);
       toast.error("Call ended by other user");
       
       // Use our dedicated handler to reset call state
@@ -294,8 +294,8 @@ export const useAuthStore = create((set, get) => ({
     });
 
     // Handle caller cancelling the call before being answered
-    newSocket.on("call-cancelled", () => {
-      console.log("Call was cancelled by the caller before being answered");
+    newSocket.on("call-cancelled", (data) => {
+      console.log("🆕 Call cancelled for callId:", data.callId);
       toast.error("The caller has cancelled the call");
       // Use our dedicated handler to reset call state
       useCallStore.getState().handleCallEnded();
@@ -303,11 +303,11 @@ export const useAuthStore = create((set, get) => ({
     
     // Handle peer disconnection (network issues, browser closed, etc.)
     newSocket.on("peer-disconnected", (data) => {
-      console.log("Peer disconnected:", data.userId);
+      console.log("🆕 Peer disconnected. UserId:", data.userId, "CallId:", data.callId);
       
       // Check if we're in a call with this user
-      const { selectedUser, isCallAccepted } = useCallStore.getState();
-      if (isCallAccepted && selectedUser && selectedUser._id === data.userId) {
+      const { currentCallId, isCallAccepted } = useCallStore.getState();
+      if (isCallAccepted && data.callId && currentCallId === data.callId) {
         toast.error("Call ended - peer disconnected");
         useCallStore.getState().handleCallEnded();
       }

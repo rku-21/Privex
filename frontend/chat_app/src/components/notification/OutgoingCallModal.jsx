@@ -66,22 +66,21 @@ useEffect(() => {
     console.log("Handle end/cancel call triggered");
     const callStore = useCallStore.getState();
     const socket = useAuthStore.getState().socket;
-    const calleeId = useChatStore.getState().selectedUser?._id;
+    const currentCallId = callStore.currentCallId;  // 🆕 Use callId instead of userId
 
-    if (!calleeId || !socket){
-      console.log("No callee ID or socket available, cannot emit call-ended/cancel-call");
+    if (!currentCallId || !socket){
+      console.log("No callId or socket available, cannot emit call-ended/cancel-call");
       return;
     };
 
     if (callStore.isCallAccepted) {
-    
-      console.log("Ending ongoing call");
-      socket.emit("call-ended", { to: calleeId });
+      console.log("Ending ongoing call with callId:", currentCallId);
+      socket.emit("call-ended", { callId: currentCallId });  // 🆕 Use callId
     } else {
-      console.log("Cancelling call before answer");
-      socket.emit("cancel-call", { to: calleeId });
+      console.log("Cancelling call before answer, callId:", currentCallId);
+      socket.emit("cancel-call", { callId: currentCallId });  // 🆕 Use callId
     }
-    console.log("Emitted call-ended/cancel-call event for user:", calleeId);
+    console.log("Emitted call-ended/cancel-call event for callId:", currentCallId);
 
     callStore.endCall();
   };
