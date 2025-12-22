@@ -68,8 +68,11 @@ if (process.env.NODE_ENV === "production") {
   app.use(express.static(frontendPath));
   console.log("Serving frontend from:", frontendPath);
 
-
-  app.get("*", (req, res) => {
+  // Catch-all route ONLY for non-API routes
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
