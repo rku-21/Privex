@@ -1,20 +1,17 @@
 {
   "name": "privex",
   "private": true,
+  "version": "1.0.0",
+  "description": "This repository contains both the frontend and backend for the Privex chat application.",
   "workspaces": [
     "frontend/chat_app",
     "backend"
   ],
-  "version": "1.0.0",
-  "description": "This repository contains both the frontend and backend for the Privex chat application.",
-  "main": "index.js",
   "scripts": {
     "dev": "npm run dev --prefix backend",
-    "build": "npm install && cd frontend/chat_app && rm -rf node_modules package-lock.json && npm install --force && npm run build",
-    "start": "npm start --prefix backend",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "start": "npm start --prefix backend"
   },
+
 
 
   "repository": {
