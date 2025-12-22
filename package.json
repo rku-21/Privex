@@ -10,7 +10,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "npm run dev --prefix backend",
-    "build": "npm install --prefix backend && cd frontend/chat_app && rm -rf node_modules package-lock.json && npm install --force && npm run build",
+    "build": "npm install && cd frontend/chat_app && rm -rf node_modules package-lock.json && npm install --force && npm run build",
     "start": "npm start --prefix backend",
     "lint": "eslint .",
     "preview": "vite preview"
