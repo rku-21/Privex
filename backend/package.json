@@ -18,7 +18,9 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "migrate:cleanup-users": "node src/scripts/cleanupOldUsers.js",
+    "db:clean": "node src/scripts/cleanDatabase.js"
   },
   "keywords": [],
   "author": "Rahul Upadhyay",

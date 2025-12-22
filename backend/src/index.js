@@ -75,11 +75,19 @@ app.use("/api/messages",protectRoute, messageRoutes);
 app.get("/api/health", async (req, res) => {
   try {
     const redisHealth = await checkRedisHealth();
+    
+    // Check email configuration
+    const emailConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    
     res.status(200).json({
       status: "healthy",
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || "development",
       redis: redisHealth,
+      email: {
+        configured: emailConfigured,
+        user: emailConfigured ? process.env.EMAIL_USER.substring(0, 3) + '***' : 'not set'
+      },
       uptime: process.uptime()
     });
   } catch (error) {

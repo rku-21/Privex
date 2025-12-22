@@ -90,12 +90,27 @@ export const requestSignup = async(req, res) => {
         // Generate OTP
         const otp = generateOTP();
         
+        console.log('� Sending OTP email first (before saving to DB)...');
+        // 🔥 IMPORTANT: Send email FIRST before creating pending signup
+        // This prevents orphaned pending signups if email fails
+        try {
+            await sendOTPEmail(email, otp, fullname);
+            console.log('✅ OTP email sent successfully to:', email);
+        } catch (emailError) {
+            console.error('❌ Failed to send OTP email:', emailError.message);
+            // Return error to frontend immediately
+            return res.status(500).json({ 
+                message: "Failed to send verification email. Please check your email address or try again later.",
+                error: process.env.NODE_ENV === "development" ? emailError.message : undefined
+            });
+        }
+        
         console.log('🗑️ Cleaning up old pending signups...');
         // Delete any existing pending signup for this email
         await PendingSignup.deleteOne({ email });
         
         console.log('💾 Creating pending signup...');
-        // Create pending signup
+        // Create pending signup (only after email sent successfully)
         await PendingSignup.create({
             email,
             fullname,
@@ -103,12 +118,6 @@ export const requestSignup = async(req, res) => {
             otp,
             profilePicture: profilepic || ""
         });
-        
-        console.log('📧 Sending OTP email...');
-        // Send OTP email
-        await sendOTPEmail(email, otp, fullname);
-        
-        console.log('✅ OTP sent successfully to:', email);
         
         return res.status(200).json({
             message: "OTP sent to your email. Please verify to complete signup.",
@@ -118,8 +127,14 @@ export const requestSignup = async(req, res) => {
     } catch(error) {
         console.error("❌ Error in requestSignup:", error);
         console.error("Error stack:", error.stack);
+        console.error("Error details:", {
+            message: error.message,
+            name: error.name,
+            code: error.code
+        });
+        
         return res.status(500).json({ 
-            message: "Failed to send OTP. Please try again.", 
+            message: "Failed to process signup request. Please try again.", 
             error: process.env.NODE_ENV === "development" ? error.message : "Internal server error"
         });
     }
