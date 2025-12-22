@@ -11,6 +11,11 @@
     "dev": "npm run dev --prefix backend",
     "start": "npm start --prefix backend"
   },
+  "engines": {
+    "node": "18.x"
+  }
+,
+
 
 
 
