@@ -67,7 +67,7 @@ export const Sidebar = () => {
     <div
       className={`
         ${selectedUser ? "hidden md:flex" : "flex"}
-        flex-col h-full w-full md:w-95 bg-gray-900 border-r border-gray-700
+        flex-col h-full w-full md:w-80 lg:w-96 bg-gray-900 border-r border-gray-700
         ${selectedUser ? "sidebar-no-small-screen" : ""}
       `}
     >

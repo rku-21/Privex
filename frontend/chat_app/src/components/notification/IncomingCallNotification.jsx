@@ -106,11 +106,23 @@ const IncomingCallNotification = () => {
   };
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] 
-  bg-gradient-to-r from-blue-600 to-purple-600 p-4 shadow-lg animate-slideDown 
-  w-[90%] sm:w-full md:w-[380px] lg:w-[360px] rounded-2xl">
-
-      <div className="max-w-md mx-auto flex items-center justify-between">
+    <div 
+      style={{ 
+        position: 'fixed',
+        top: '16px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 9999,
+        width: '95%',
+        maxWidth: '384px',
+        background: 'linear-gradient(to right, rgb(37, 99, 235), rgb(147, 51, 234))',
+        padding: '16px',
+        borderRadius: '16px',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+        animation: 'slideDown 0.3s ease-out'
+      }}
+    >
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
 
           {/* Profile Picture with Link */}
