@@ -35,7 +35,7 @@ app.use(
 
 // API routes FIRST
 app.use("/api/auth", authRoutes);
-app.use("/api/messages", protectRoute, messageRoutes);
+app.use("/api/messages", messageRoutes);
 
 // Health check
 app.get("/api/health", async (req, res) => {
