@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import { protectRoute } from './middleware/auth.protectRoute.js';
 import cors from "cors";
 import path from "path";
-
+import { checkRedisHealth } from "./lib/redis.js";
 
 
 dotenv.config();
@@ -23,11 +23,12 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
-
-
+// 🔥 FIX: Proper CORS configuration for development and production
 app.use(
   cors({
-    origin:"http://localhost:5173",
+    origin: process.env.NODE_ENV === "production" 
+      ? true // Allow same-origin in production (frontend served from same domain)
+      : "http://localhost:5173", // Only allow localhost in development
     credentials: true,
   })
 );
@@ -68,9 +69,26 @@ const port = process.env.PORT || 5001;
 
 app.use("/api/auth", authRoutes);
 
-
-
 app.use("/api/messages",protectRoute, messageRoutes);
+
+// 🔥 Health check endpoint with Redis status
+app.get("/api/health", async (req, res) => {
+  try {
+    const redisHealth = await checkRedisHealth();
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "development",
+      redis: redisHealth,
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "unhealthy",
+      error: error.message
+    });
+  }
+});
 
 
 console.log('🎯 Step 8: Starting server...');

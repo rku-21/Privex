@@ -14,6 +14,13 @@ const createTransporter = () => {
 // Send OTP email
 export const sendOTPEmail = async (email, otp, fullname) => {
   try {
+    // 🔥 Validate environment variables
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error('❌ EMAIL_USER or EMAIL_PASS not configured in environment variables');
+      throw new Error('Email service not configured. Please contact support.');
+    }
+
+    console.log(`📧 Attempting to send OTP to ${email}...`);
     const transporter = createTransporter();
     
     const mailOptions = {
@@ -72,9 +79,11 @@ export const sendOTPEmail = async (email, otp, fullname) => {
     };
     
     await transporter.sendMail(mailOptions);
+    console.log(`✅ OTP email sent successfully to ${email}`);
     return true;
   } catch (error) {
-    console.error('Error sending OTP email:', error);
-    throw new Error('Failed to send verification email');
+    console.error('❌ Error sending OTP email:', error);
+    console.error('Email details:', { to: email, error: error.message });
+    throw new Error(`Failed to send verification email: ${error.message}`);
   }
 };

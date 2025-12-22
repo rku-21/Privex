@@ -54,38 +54,47 @@ export const requestSignup = async(req, res) => {
     const { fullname, email, password, profilepic } = req.body;
     
     try {
-        console.log('Request signup data:', { fullname, email, password: '***', profilepic });
+        console.log('📝 Request signup initiated:', { fullname, email, hasPassword: !!password });
         
         if (!email || !fullname || !password) {
+            console.log('❌ Missing required fields');
             return res.status(400).json({message: "Please provide email, fullname and password"});
         }
         
         if (password.length < 6) {
+            console.log('❌ Password too short');
             return res.status(400).json({ message: "Password must be at least 6 characters long" });
         }
         
         // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
+            console.log('❌ Invalid email format');
             return res.status(400).json({message: "Invalid email format"});
         }
         
+        console.log('🔍 Checking for existing user...');
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
+            console.log('❌ User already exists');
             return res.status(400).json({message: "User already exists with this email"});
         }
         
+        console.log('🔐 Hashing password...');
         // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
         
+        console.log('🎲 Generating OTP...');
         // Generate OTP
         const otp = generateOTP();
         
+        console.log('🗑️ Cleaning up old pending signups...');
         // Delete any existing pending signup for this email
         await PendingSignup.deleteOne({ email });
         
+        console.log('💾 Creating pending signup...');
         // Create pending signup
         await PendingSignup.create({
             email,
@@ -95,8 +104,11 @@ export const requestSignup = async(req, res) => {
             profilePicture: profilepic || ""
         });
         
+        console.log('📧 Sending OTP email...');
         // Send OTP email
         await sendOTPEmail(email, otp, fullname);
+        
+        console.log('✅ OTP sent successfully to:', email);
         
         return res.status(200).json({
             message: "OTP sent to your email. Please verify to complete signup.",
@@ -104,8 +116,12 @@ export const requestSignup = async(req, res) => {
         });
         
     } catch(error) {
-        console.error("Error in requestSignup:", error);
-        return res.status(500).json({ message: "Failed to send OTP", error: error.message });
+        console.error("❌ Error in requestSignup:", error);
+        console.error("Error stack:", error.stack);
+        return res.status(500).json({ 
+            message: "Failed to send OTP. Please try again.", 
+            error: process.env.NODE_ENV === "development" ? error.message : "Internal server error"
+        });
     }
 };
 

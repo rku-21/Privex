@@ -7,29 +7,70 @@ const memoryStore = {
   socketUsers: new Map(), // socketId -> userId
 };
 
-// Production-ready Redis client with connection pooling and error handling
-const redis = new Redis({
-  host: process.env.REDIS_HOST || "127.0.0.1",
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || undefined,
-  retryStrategy: (times) => {
-    if (times > 3) {
-      console.warn("⚠️ Redis connection failed, falling back to in-memory storage");
-      useMemoryFallback = true;
-      return null; // Stop retrying
-    }
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  },
-  maxRetriesPerRequest: 3,
-  enableReadyCheck: true,
-  lazyConnect: false,
-  enableOfflineQueue: false, // Don't queue commands when offline
-});
+// 🔥 Production-ready Redis configuration
+const getRedisConfig = () => {
+  // Priority 1: Use REDIS_URL (most cloud providers like Upstash, Railway, Render)
+  if (process.env.REDIS_URL) {
+    console.log("📡 Connecting to Redis using REDIS_URL");
+    return {
+      // Parse connection URL automatically
+      ...(process.env.REDIS_URL.startsWith('rediss://') 
+        ? { 
+            // Secure Redis (TLS)
+            tls: {
+              rejectUnauthorized: false // Required for some cloud providers
+            }
+          } 
+        : {}
+      ),
+      maxRetriesPerRequest: 3,
+      enableReadyCheck: true,
+      lazyConnect: false,
+      enableOfflineQueue: false,
+      retryStrategy: (times) => {
+        if (times > 3) {
+          console.warn("⚠️ Redis connection failed after 3 retries, falling back to in-memory storage");
+          useMemoryFallback = true;
+          return null;
+        }
+        return Math.min(times * 50, 2000);
+      }
+    };
+  }
+  
+  // Priority 2: Use individual credentials (local development)
+  console.log("📡 Connecting to Redis using host/port configuration");
+  return {
+    host: process.env.REDIS_HOST || "127.0.0.1",
+    port: parseInt(process.env.REDIS_PORT || "6379"),
+    password: process.env.REDIS_PASSWORD || undefined,
+    retryStrategy: (times) => {
+      if (times > 3) {
+        console.warn("⚠️ Redis connection failed, falling back to in-memory storage");
+        useMemoryFallback = true;
+        return null;
+      }
+      return Math.min(times * 50, 2000);
+    },
+    maxRetriesPerRequest: 3,
+    enableReadyCheck: true,
+    lazyConnect: false,
+    enableOfflineQueue: false,
+  };
+};
+
+// Create Redis client
+const redis = process.env.REDIS_URL 
+  ? new Redis(process.env.REDIS_URL, getRedisConfig())
+  : new Redis(getRedisConfig());
 
 redis.on("connect", () => {
   console.log("✅ Redis connected successfully");
   useMemoryFallback = false;
+});
+
+redis.on("ready", () => {
+  console.log("🚀 Redis is ready to accept commands");
 });
 
 redis.on("error", (err) => {
@@ -41,11 +82,41 @@ redis.on("error", (err) => {
 });
 
 redis.on("reconnecting", () => {
-  // Silently ignore reconnection attempts once fallback is active
   if (!useMemoryFallback) {
     console.log("🔄 Redis reconnecting...");
   }
 });
+
+redis.on("close", () => {
+  if (!useMemoryFallback) {
+    console.log("⚠️ Redis connection closed");
+  }
+});
+
+// Health check function for monitoring
+export async function checkRedisHealth() {
+  try {
+    if (useMemoryFallback) {
+      return { 
+        status: "fallback", 
+        message: "Using in-memory storage",
+        online: true 
+      };
+    }
+    await redis.ping();
+    return { 
+      status: "connected", 
+      message: "Redis is healthy",
+      online: true 
+    };
+  } catch (error) {
+    return { 
+      status: "error", 
+      message: error.message,
+      online: false 
+    };
+  }
+}
 
 // ============================================
 // USER SOCKET MAPPING (Multi-device support)
