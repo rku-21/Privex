@@ -19,6 +19,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
+    "build": "cd ../frontend/chat_app && npm install && npm run build",
     "migrate:cleanup-users": "node src/scripts/cleanupOldUsers.js",
     "db:clean": "node src/scripts/cleanDatabase.js"
   },

@@ -196,7 +196,63 @@ Check these:
 3. **Server Logs** - What do the emoji logs show?
 4. **Email Spam Folder** - Check if OTP email is there
 5. **Environment Variables** - All set correctly?
-6. **Health Check** - Visit `/api/health` to see system status (includes Redis)
+6. **Health Check** - Visit `/api/health` to see system status (includes Redis and Email config)
+
+### 🔴 **Issue: OTP Not Sending (Stuck on Signup Page)**
+
+**Symptoms:**
+- User fills signup form and clicks submit
+- Loading spinner shows
+- Data saved in `pendingsignups` collection
+- But NO email received
+- User stuck on signup page
+
+**Root Cause:**
+Email service failing in production (missing or wrong env vars)
+
+**Fix:**
+
+1. **Check Email Configuration:**
+   ```
+   Visit: https://your-app.com/api/health
+   
+   Look for:
+   {
+     "email": {
+       "configured": true,  // Should be true
+       "user": "you***"     // Should show part of your email
+     }
+   }
+   ```
+
+2. **If `configured: false`:**
+   - Missing `EMAIL_USER` or `EMAIL_PASS` in hosting platform
+   - Add them in environment variables
+   - Restart your app
+
+3. **If `configured: true` but still not working:**
+   - Check Gmail app password is correct (16 digits, no spaces)
+   - Try generating a new app password
+   - Make sure Gmail account hasn't blocked the app
+
+4. **Check Server Logs:**
+   Look for these messages:
+   ```
+   📧 Attempting to send OTP to email...
+   ✅ OTP email sent successfully  <- Should see this
+   
+   OR
+   
+   ❌ Failed to send OTP email: <error message>  <- This shows the problem
+   ```
+
+5. **Common Email Errors:**
+   - `Invalid login` - Wrong app password
+   - `535-5.7.8 Username and Password not accepted` - Need to generate new app password
+   - `Email service not configured` - Missing env vars
+
+**Quick Test:**
+After fixing email config, try signup again. If it works, you'll see step 2 (OTP verification).
 
 ## 🔴 Redis Setup (Optional)
 
