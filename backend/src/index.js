@@ -62,18 +62,18 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Serve frontend in production
 if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.join(__dirname, "../frontend/chat_app/dist");
-  
+  const frontendPath = path.join(__dirname, "../../frontend/chat_app/dist");
+
   app.use(express.static(frontendPath));
-  
+  console.log("Serving frontend from:", frontendPath);
+
+
   app.get("*", (req, res) => {
     res.sendFile(path.join(frontendPath, "index.html"));
   });
-} else {
-  console.log('🛠️ Development environment detected');
 }
+
 
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err);

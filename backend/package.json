@@ -1,4 +1,15 @@
 {
+  "name": "backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "migrate:cleanup-users": "node src/scripts/cleanupOldUsers.js",
+    "db:clean": "node src/scripts/cleanDatabase.js"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
@@ -10,22 +21,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.0",
     "nodemailer": "^7.0.11",
-    "privex": "file:..",
     "socket.io": "^4.8.1"
   },
-  "name": "backend",
-  "version": "1.0.0",
-  "main": "src/index.js",
-  "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
-    "build": "cd ../frontend/chat_app && npm install && npm run build",
-    "migrate:cleanup-users": "node src/scripts/cleanupOldUsers.js",
-    "db:clean": "node src/scripts/cleanDatabase.js"
-  },
-  "keywords": [],
   "author": "Rahul Upadhyay",
-  "type": "module",
   "license": "ISC",
-  "description": ""
+  "description": "Privex backend server"
 }
