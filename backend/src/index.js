@@ -90,9 +90,17 @@ app.use((err, req, res, next) => {
 });
 
 console.log('🎯 Starting server...');
-server.listen(port, '0.0.0.0', () => {
-  console.log('✅ Server running on port', port);
-  connectDB();
+console.log('📍 Environment:', process.env.NODE_ENV || 'development');
+console.log('🔌 Port:', port);
+
+server.listen(port, '0.0.0.0', async () => {
+  console.log(`✅ Server is running on port ${port}`);
+  console.log(`🌐 Server is listening on http://0.0.0.0:${port}`);
+  
+  // Connect to database asynchronously (don't block server startup)
+  connectDB().catch(err => {
+    console.error('⚠️ Database connection failed:', err.message);
+  });
 });
 
 
