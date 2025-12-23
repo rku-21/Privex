@@ -1,14 +1,4 @@
-import SibApiV3Sdk from '@sendinblue/client';
-
-// Initialize Brevo (Sendinblue) client
-const getBrevoClient = () => {
-  const client = SibApiV3Sdk.ApiClient.instance;
-  const apiKey = client.authentications['api-key'];
-  apiKey.apiKey = process.env.BREVO_API_KEY;
-  return new SibApiV3Sdk.TransactionalEmailsApi();
-};
-
-// Send OTP email using Brevo
+// Send OTP email using Brevo REST API
 export const sendOTPEmail = async (email, otp, fullname) => {
   try {
     // 🔥 Validate environment variables
@@ -20,11 +10,10 @@ export const sendOTPEmail = async (email, otp, fullname) => {
     console.log(`📧 Attempting to send OTP to ${email}...`);
     console.log(`🔑 Using Brevo API (key length: ${process.env.BREVO_API_KEY?.length})`);
     
-    const apiInstance = getBrevoClient();
-    
-    const sendSmtpEmail = {
+    // Use Brevo REST API directly
+    const emailData = {
       sender: { 
-        email: 'noreply@privex.com', // Can be any email
+        email: 'noreply@privex.com',
         name: 'Privex Chat' 
       },
       to: [{ email: email, name: fullname }],
@@ -79,15 +68,22 @@ export const sendOTPEmail = async (email, otp, fullname) => {
       `
     };
     
-    // Send email with timeout protection
-    const sendEmailWithTimeout = Promise.race([
-      apiInstance.sendTransacEmail(sendSmtpEmail),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Email sending timeout after 10 seconds')), 10000)
-      )
-    ]);
+    // Send email using fetch to Brevo API
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(emailData)
+    });
     
-    await sendEmailWithTimeout;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Brevo API error: ${errorData.message || response.statusText}`);
+    }
+    
     console.log(`✅ OTP email sent successfully to ${email} via Brevo`);
     return true;
   } catch (error) {
@@ -114,18 +110,18 @@ export const testEmailService = async () => {
     }
     
     console.log('📧 Testing Brevo email service...');
-    const client = SibApiV3Sdk.ApiClient.instance;
-    const apiKey = client.authentications['api-key'];
-    apiKey.apiKey = process.env.BREVO_API_KEY;
     
-    const apiInstance = new SibApiV3Sdk.AccountApi();
+    const response = await fetch('https://api.brevo.com/v3/account', {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY
+      }
+    });
     
-    await Promise.race([
-      apiInstance.getAccount(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 5000)
-      )
-    ]);
+    if (!response.ok) {
+      throw new Error(`API test failed: ${response.statusText}`);
+    }
     
     console.log('✅ Brevo email service is ready');
     return true;
