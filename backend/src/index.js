@@ -63,8 +63,9 @@ app.get("/api/health", async (req, res) => {
 });
 
 if (process.env.NODE_ENV === "production") {
-  const frontendPath = path.join(
+  const frontendPath = path.resolve(
     process.cwd(),
+    "..",
     "frontend",
     "chat_app",
     "dist"
