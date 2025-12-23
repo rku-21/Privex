@@ -145,6 +145,8 @@ export const verifySignup = async(req, res) => {
     const { email, otp } = req.body;
     
     try {
+        console.log('🔐 OTP Verification attempt:', { email, otp: otp?.trim() });
+        
         if (!email || !otp) {
             return res.status(400).json({message: "Please provide email and OTP"});
         }
@@ -153,13 +155,26 @@ export const verifySignup = async(req, res) => {
         const pendingSignup = await PendingSignup.findOne({ email });
         
         if (!pendingSignup) {
+            console.log('❌ No pending signup found for:', email);
             return res.status(400).json({message: "OTP expired or invalid. Please request a new one."});
         }
         
-        // Verify OTP
-        if (pendingSignup.otp !== otp.trim()) {
+        console.log('📋 Stored OTP:', pendingSignup.otp);
+        console.log('📋 Received OTP:', otp.trim());
+        console.log('📋 OTPs match:', pendingSignup.otp === otp.trim());
+        console.log('📋 Stored OTP type:', typeof pendingSignup.otp);
+        console.log('📋 Received OTP type:', typeof otp);
+        
+        // Verify OTP - convert both to strings and trim
+        const storedOTP = String(pendingSignup.otp).trim();
+        const receivedOTP = String(otp).trim();
+        
+        if (storedOTP !== receivedOTP) {
+            console.log('❌ OTP mismatch! Stored:', storedOTP, 'Received:', receivedOTP);
             return res.status(400).json({message: "Invalid OTP. Please try again."});
         }
+        
+        console.log('✅ OTP verified! Creating user...');
         
         // Create user
         const newUser = new User({
@@ -217,6 +232,8 @@ export const resendOTP = async(req, res) => {
     const { email } = req.body;
     
     try {
+        console.log('🔄 Resend OTP request for:', email);
+        
         if (!email) {
             return res.status(400).json({message: "Please provide email"});
         }
@@ -225,18 +242,23 @@ export const resendOTP = async(req, res) => {
         const pendingSignup = await PendingSignup.findOne({ email });
         
         if (!pendingSignup) {
+            console.log('❌ No pending signup found for:', email);
             return res.status(400).json({message: "No pending signup found. Please start signup again."});
         }
         
         // Generate new OTP
         const otp = generateOTP();
+        console.log('🎲 New OTP generated:', otp);
+        
         pendingSignup.otp = otp;
         pendingSignup.createdAt = Date.now(); // Reset expiry timer
         await pendingSignup.save();
         
+        console.log('📧 Sending new OTP email...');
         // Send OTP email
         await sendOTPEmail(email, otp, pendingSignup.fullname);
         
+        console.log('✅ New OTP sent successfully');
         return res.status(200).json({
             message: "New OTP sent to your email"
         });

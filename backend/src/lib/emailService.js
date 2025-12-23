@@ -13,7 +13,7 @@ export const sendOTPEmail = async (email, otp, fullname) => {
     // Use Brevo REST API directly
     const emailData = {
       sender: { 
-        email: 'noreply@privex.com',
+        email: process.env.EMAIL_USER || 'privexapp21@gmail.com', // Use your verified email
         name: 'Privex Chat' 
       },
       to: [{ email: email, name: fullname }],
