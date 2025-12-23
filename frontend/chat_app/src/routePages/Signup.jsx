@@ -39,9 +39,17 @@ export default function Signup() {
     if (success !== true) return;
 
     setIsLoading(true);
+    
+    // Set a safety timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      window.toast?.error('Request timeout. Please check your internet connection and try again.');
+    }, 35000); // 35 seconds (slightly more than axios timeout)
+    
     try {
       const { confirmPassword, ...signupData } = formData;
       const res = await axiosInstance.post('/auth/request-signup', signupData);
+      clearTimeout(timeoutId); // Clear timeout on success
       window.toast?.success(res.data.message || 'OTP sent to your email!');
       setStep(2);
       setResendTimer(60); // 60 seconds cooldown
@@ -57,7 +65,21 @@ export default function Signup() {
         });
       }, 1000);
     } catch (error) {
-      window.toast?.error(error.response?.data?.message || 'Failed to send OTP');
+      clearTimeout(timeoutId); // Clear timeout on error
+      console.error('OTP request error:', error);
+      
+      // Handle different error types
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        window.toast?.error('Request timeout. Server is taking too long to respond. Please try again.');
+      } else if (error.response?.status === 500) {
+        window.toast?.error(error.response?.data?.message || 'Server error. Please contact support if this persists.');
+      } else if (error.response?.status === 400) {
+        window.toast?.error(error.response?.data?.message || 'Invalid signup data. Please check your information.');
+      } else if (!error.response) {
+        window.toast?.error('Network error. Please check your internet connection.');
+      } else {
+        window.toast?.error(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -92,8 +114,16 @@ export default function Signup() {
     if (resendTimer > 0) return;
     
     setIsLoading(true);
+    
+    // Safety timeout
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      window.toast?.error('Request timeout. Please try again.');
+    }, 35000);
+    
     try {
       const res = await axiosInstance.post('/auth/resend-otp', { email: formData.email });
+      clearTimeout(timeoutId);
       window.toast?.success(res.data.message || 'New OTP sent!');
       setResendTimer(60);
       
@@ -107,7 +137,14 @@ export default function Signup() {
         });
       }, 1000);
     } catch (error) {
-      window.toast?.error(error.response?.data?.message || 'Failed to resend OTP');
+      clearTimeout(timeoutId);
+      console.error('Resend OTP error:', error);
+      
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        window.toast?.error('Request timeout. Please check your connection and try again.');
+      } else {
+        window.toast?.error(error.response?.data?.message || 'Failed to resend OTP');
+      }
     } finally {
       setIsLoading(false);
     }
