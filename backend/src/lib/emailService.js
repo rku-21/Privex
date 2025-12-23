@@ -7,11 +7,15 @@ const createTransporter = () => {
     auth: {
       user: process.env.EMAIL_USER, // Your Gmail address
       pass: process.env.EMAIL_PASS  // Your Gmail App Password
-    }
+    },
+    pool: true, // Use connection pooling
+    maxConnections: 1,
+    rateDelta: 1000,
+    rateLimit: 3
   });
 };
 
-// Send OTP email
+// Send OTP email with timeout protection
 export const sendOTPEmail = async (email, otp, fullname) => {
   try {
     // 🔥 Validate environment variables
@@ -23,6 +27,9 @@ export const sendOTPEmail = async (email, otp, fullname) => {
     }
 
     console.log(`📧 Attempting to send OTP to ${email}...`);
+    console.log(`🔑 Using EMAIL_USER: ${process.env.EMAIL_USER}`);
+    console.log(`🔑 EMAIL_PASS length: ${process.env.EMAIL_PASS?.length}`);
+    
     const transporter = createTransporter();
     
     const mailOptions = {
@@ -42,7 +49,6 @@ export const sendOTPEmail = async (email, otp, fullname) => {
             .otp-box { background: #f8f9fa; border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0; }
             .otp-code { font-size: 36px; font-weight: bold; color: #667eea; letter-spacing: 8px; margin: 10px 0; }
             .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 12px; }
-            .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
           </style>
         </head>
         <body>
@@ -80,7 +86,15 @@ export const sendOTPEmail = async (email, otp, fullname) => {
       `
     };
     
-    await transporter.sendMail(mailOptions);
+    // Send email with 15 second timeout
+    const sendEmailWithTimeout = Promise.race([
+      transporter.sendMail(mailOptions),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email sending timeout after 15 seconds')), 15000)
+      )
+    ]);
+    
+    await sendEmailWithTimeout;
     console.log(`✅ OTP email sent successfully to ${email}`);
     return true;
   } catch (error) {
@@ -88,11 +102,18 @@ export const sendOTPEmail = async (email, otp, fullname) => {
     console.error('Error type:', error.name);
     console.error('Error message:', error.message);
     console.error('Error code:', error.code);
-    console.error('Full error:', JSON.stringify(error, null, 2));
     console.error('Recipient:', email);
     console.error('EMAIL_USER:', process.env.EMAIL_USER);
     console.error('EMAIL_PASS length:', process.env.EMAIL_PASS?.length);
-    throw new Error(`Failed to send verification email: ${error.message}`);
+    
+    // More specific error message
+    if (error.message.includes('timeout')) {
+      throw new Error('Gmail is not responding. Please check your email credentials in Render dashboard.');
+    } else if (error.message.includes('Invalid login')) {
+      throw new Error('Invalid Gmail credentials. Please verify EMAIL_USER and EMAIL_PASS in Render dashboard.');
+    } else {
+      throw new Error(`Failed to send verification email: ${error.message}`);
+    }
   }
 };
 
@@ -101,11 +122,21 @@ export const testEmailService = async () => {
   try {
     console.log('📧 Testing email service...');
     const transporter = createTransporter();
-    await transporter.verify();
+    
+    // Test with timeout
+    await Promise.race([
+      transporter.verify(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email service verification timeout')), 10000)
+      )
+    ]);
+    
     console.log('✅ Email service is ready to send emails');
     return true;
   } catch (error) {
     console.error('❌ Email service test failed:', error.message);
+    console.error('❌ This means OTP emails WILL NOT WORK');
+    console.error('❌ Please check EMAIL_USER and EMAIL_PASS in Render dashboard');
     return false;
   }
 };
