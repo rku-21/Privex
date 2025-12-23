@@ -16,6 +16,7 @@ const port = process.env.PORT || 5001;
 
 import authRoutes from './route/auth.route.js';
 import messageRoutes from './route/message.route.js';
+import { testEmailService } from './lib/emailService.js';
 
 
 
@@ -106,6 +107,11 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
 server.listen(port, '0.0.0.0', async () => {
   console.log(`✅ Server is running on port ${port}`);
   console.log(`🌐 Server is listening on http://0.0.0.0:${port}`);
+  
+  // Test email service
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    await testEmailService();
+  }
   
   // Connect to database asynchronously (don't block server startup)
   connectDB().catch(err => {

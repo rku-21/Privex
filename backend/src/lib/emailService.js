@@ -84,8 +84,28 @@ export const sendOTPEmail = async (email, otp, fullname) => {
     console.log(`✅ OTP email sent successfully to ${email}`);
     return true;
   } catch (error) {
-    console.error('❌ Error sending OTP email:', error);
-    console.error('Email details:', { to: email, error: error.message });
+    console.error('❌❌❌ EMAIL SENDING FAILED ❌❌❌');
+    console.error('Error type:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Full error:', JSON.stringify(error, null, 2));
+    console.error('Recipient:', email);
+    console.error('EMAIL_USER:', process.env.EMAIL_USER);
+    console.error('EMAIL_PASS length:', process.env.EMAIL_PASS?.length);
     throw new Error(`Failed to send verification email: ${error.message}`);
+  }
+};
+
+// Test email configuration
+export const testEmailService = async () => {
+  try {
+    console.log('📧 Testing email service...');
+    const transporter = createTransporter();
+    await transporter.verify();
+    console.log('✅ Email service is ready to send emails');
+    return true;
+  } catch (error) {
+    console.error('❌ Email service test failed:', error.message);
+    return false;
   }
 };
