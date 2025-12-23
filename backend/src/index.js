@@ -93,6 +93,16 @@ console.log('🎯 Starting server...');
 console.log('📍 Environment:', process.env.NODE_ENV || 'development');
 console.log('🔌 Port:', port);
 
+// Check email service configuration
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.error('⚠️⚠️⚠️ EMAIL SERVICE NOT CONFIGURED ⚠️⚠️⚠️');
+  console.error('❌ EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'NOT SET');
+  console.error('❌ EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'NOT SET');
+  console.error('⚠️ OTP emails will FAIL until these are configured in Render dashboard');
+} else {
+  console.log('✅ Email service configured');
+}
+
 server.listen(port, '0.0.0.0', async () => {
   console.log(`✅ Server is running on port ${port}`);
   console.log(`🌐 Server is listening on http://0.0.0.0:${port}`);

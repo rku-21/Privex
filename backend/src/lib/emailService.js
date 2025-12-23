@@ -17,7 +17,9 @@ export const sendOTPEmail = async (email, otp, fullname) => {
     // 🔥 Validate environment variables
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       console.error('❌ EMAIL_USER or EMAIL_PASS not configured in environment variables');
-      throw new Error('Email service not configured. Please contact support.');
+      console.error('❌ EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'NOT SET');
+      console.error('❌ EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'NOT SET');
+      throw new Error('Email service not configured. Please add EMAIL_USER and EMAIL_PASS environment variables in Render dashboard.');
     }
 
     console.log(`📧 Attempting to send OTP to ${email}...`);
