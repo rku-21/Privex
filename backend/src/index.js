@@ -64,22 +64,22 @@ app.get("/api/health", async (req, res) => {
 
 if (process.env.NODE_ENV === "production") {
   const frontendPath = path.join(
-    __dirname,
-    "../../../frontend/chat_app/dist"
+    process.cwd(),
+    "frontend",
+    "chat_app",
+    "dist"
   );
 
   console.log("Serving frontend from:", frontendPath);
 
   app.use(express.static(frontendPath));
 
-  // Catch-all route ONLY for non-API routes
   app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api")) {
-      return next();
-    }
+    if (req.path.startsWith("/api")) return next();
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
+
 
 
 
