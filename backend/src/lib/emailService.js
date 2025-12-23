@@ -1,42 +1,35 @@
-import nodemailer from 'nodemailer';
+import SibApiV3Sdk from '@sendinblue/client';
 
-// Create transporter for sending emails
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER, // Your Gmail address
-      pass: process.env.EMAIL_PASS  // Your Gmail App Password
-    },
-    pool: true, // Use connection pooling
-    maxConnections: 1,
-    rateDelta: 1000,
-    rateLimit: 3
-  });
+// Initialize Brevo (Sendinblue) client
+const getBrevoClient = () => {
+  const client = SibApiV3Sdk.ApiClient.instance;
+  const apiKey = client.authentications['api-key'];
+  apiKey.apiKey = process.env.BREVO_API_KEY;
+  return new SibApiV3Sdk.TransactionalEmailsApi();
 };
 
-// Send OTP email with timeout protection
+// Send OTP email using Brevo
 export const sendOTPEmail = async (email, otp, fullname) => {
   try {
     // 🔥 Validate environment variables
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.error('❌ EMAIL_USER or EMAIL_PASS not configured in environment variables');
-      console.error('❌ EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'NOT SET');
-      console.error('❌ EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'NOT SET');
-      throw new Error('Email service not configured. Please add EMAIL_USER and EMAIL_PASS environment variables in Render dashboard.');
+    if (!process.env.BREVO_API_KEY) {
+      console.error('❌ BREVO_API_KEY not configured in environment variables');
+      throw new Error('Email service not configured. Please add BREVO_API_KEY environment variable in Render dashboard.');
     }
 
     console.log(`📧 Attempting to send OTP to ${email}...`);
-    console.log(`🔑 Using EMAIL_USER: ${process.env.EMAIL_USER}`);
-    console.log(`🔑 EMAIL_PASS length: ${process.env.EMAIL_PASS?.length}`);
+    console.log(`🔑 Using Brevo API (key length: ${process.env.BREVO_API_KEY?.length})`);
     
-    const transporter = createTransporter();
+    const apiInstance = getBrevoClient();
     
-    const mailOptions = {
-      from: `"Privex Chat" <${process.env.EMAIL_USER}>`,
-      to: email,
+    const sendSmtpEmail = {
+      sender: { 
+        email: 'noreply@privex.com', // Can be any email
+        name: 'Privex Chat' 
+      },
+      to: [{ email: email, name: fullname }],
       subject: 'Verify Your Email - Privex Chat',
-      html: `
+      htmlContent: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -86,57 +79,60 @@ export const sendOTPEmail = async (email, otp, fullname) => {
       `
     };
     
-    // Send email with 15 second timeout
+    // Send email with timeout protection
     const sendEmailWithTimeout = Promise.race([
-      transporter.sendMail(mailOptions),
+      apiInstance.sendTransacEmail(sendSmtpEmail),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Email sending timeout after 15 seconds')), 15000)
+        setTimeout(() => reject(new Error('Email sending timeout after 10 seconds')), 10000)
       )
     ]);
     
     await sendEmailWithTimeout;
-    console.log(`✅ OTP email sent successfully to ${email}`);
+    console.log(`✅ OTP email sent successfully to ${email} via Brevo`);
     return true;
   } catch (error) {
     console.error('❌❌❌ EMAIL SENDING FAILED ❌❌❌');
-    console.error('Error type:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error code:', error.code);
+    console.error('Error:', error.message);
     console.error('Recipient:', email);
-    console.error('EMAIL_USER:', process.env.EMAIL_USER);
-    console.error('EMAIL_PASS length:', process.env.EMAIL_PASS?.length);
     
-    // More specific error message
     if (error.message.includes('timeout')) {
-      throw new Error('Gmail is not responding. Please check your email credentials in Render dashboard.');
-    } else if (error.message.includes('Invalid login')) {
-      throw new Error('Invalid Gmail credentials. Please verify EMAIL_USER and EMAIL_PASS in Render dashboard.');
+      throw new Error('Email service timeout. Please try again.');
+    } else if (error.message.includes('Unauthorized')) {
+      throw new Error('Invalid Brevo API key. Please check BREVO_API_KEY in Render dashboard.');
     } else {
       throw new Error(`Failed to send verification email: ${error.message}`);
     }
   }
 };
 
-// Test email configuration
+// Test Brevo email service
 export const testEmailService = async () => {
   try {
-    console.log('📧 Testing email service...');
-    const transporter = createTransporter();
+    if (!process.env.BREVO_API_KEY) {
+      console.error('❌ BREVO_API_KEY not configured');
+      return false;
+    }
     
-    // Test with timeout
+    console.log('📧 Testing Brevo email service...');
+    const client = SibApiV3Sdk.ApiClient.instance;
+    const apiKey = client.authentications['api-key'];
+    apiKey.apiKey = process.env.BREVO_API_KEY;
+    
+    const apiInstance = new SibApiV3Sdk.AccountApi();
+    
     await Promise.race([
-      transporter.verify(),
+      apiInstance.getAccount(),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Email service verification timeout')), 10000)
+        setTimeout(() => reject(new Error('Timeout')), 5000)
       )
     ]);
     
-    console.log('✅ Email service is ready to send emails');
+    console.log('✅ Brevo email service is ready');
     return true;
   } catch (error) {
-    console.error('❌ Email service test failed:', error.message);
-    console.error('❌ This means OTP emails WILL NOT WORK');
-    console.error('❌ Please check EMAIL_USER and EMAIL_PASS in Render dashboard');
+    console.error('❌ Brevo service test failed:', error.message);
+    console.error('❌ OTP emails WILL NOT WORK');
+    console.error('❌ Please check BREVO_API_KEY in Render dashboard');
     return false;
   }
 };

@@ -95,13 +95,12 @@ console.log('📍 Environment:', process.env.NODE_ENV || 'development');
 console.log('🔌 Port:', port);
 
 // Check email service configuration
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+if (!process.env.BREVO_API_KEY) {
   console.error('⚠️⚠️⚠️ EMAIL SERVICE NOT CONFIGURED ⚠️⚠️⚠️');
-  console.error('❌ EMAIL_USER:', process.env.EMAIL_USER ? 'Set' : 'NOT SET');
-  console.error('❌ EMAIL_PASS:', process.env.EMAIL_PASS ? 'Set' : 'NOT SET');
-  console.error('⚠️ OTP emails will FAIL until these are configured in Render dashboard');
+  console.error('❌ BREVO_API_KEY: NOT SET');
+  console.error('⚠️ OTP emails will FAIL until this is configured in Render dashboard');
 } else {
-  console.log('✅ Email service configured');
+  console.log('✅ Brevo email service configured');
 }
 
 server.listen(port, '0.0.0.0', async () => {

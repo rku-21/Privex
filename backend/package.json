@@ -12,6 +12,7 @@
     "db:clean": "node src/scripts/cleanDatabase.js"
   },
   "dependencies": {
+    "@sendinblue/client": "^3.3.1",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
@@ -21,7 +22,6 @@
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.0",
-    "nodemailer": "^7.0.11",
     "socket.io": "^4.8.1"
   },
   "author": "Rahul Upadhyay",
