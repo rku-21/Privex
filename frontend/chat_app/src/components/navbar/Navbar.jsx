@@ -139,7 +139,7 @@ export const Navbar = () => {
             </li>
             <li
               className="px-4 py-2 text-xl cursor-pointer hover:bg-[#050529a3]"
-              onClick={GotoContact}
+              onClick={Goconstruction}
             >
               📞 Contact Us
             </li>
