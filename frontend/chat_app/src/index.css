@@ -2,26 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force dark mode globally */
+html {
+  background: #111827;
+  color-scheme: dark;
+}
+
 body {
-   background: #111827;
+  background: #111827;
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
   overflow-x: hidden;
   overflow-y: auto;
+  color: #fff;
 }
+
 #root {
-    background: #111827;
+  background: #111827;
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
   overflow-x: hidden;
   overflow-y: auto;
   height: 100%;
-}
-
-body.dark-mode, body.dark-mode #root {
-  /* background: linear-gradient(135deg, #18122b, #181225 80%, #0a081b 100%) !important; */
 }
 
 /* Call notification animations */
