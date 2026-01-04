@@ -7,7 +7,7 @@ import BottomNavbar from "../components/bottomNav/BottomNavbar.jsx"
 import { NoChatSelected } from "../components/NoChatSelected.jsx"; 
 import ChatContainer from "../components/chatContainer/ChatContainer.jsx";
 import { useChatStore } from "../store/useChatStore.js";
-import { Sidebar } from "../components/sidebar/Sidebar.jsx" 
+import { Sidebar } from "../components/sidebar/Sidebar.jsx"
 
 
 import { useThemeStore } from "../store/useThemeStore";
@@ -26,18 +26,20 @@ export const Home = () => {
     }
   }, [location.state, setselectedUser]);
   
-  // Verify selected user exists in friends list
+  // Verify selected user exists in friends list (but don't clear during loading states)
   useEffect(() => {
-    if (selectedUser && friends.length > 0) {
-      // Check if selectedUser exists in friends list
-      const userExists = typeof selectedUser === 'string' 
-        ? friends.some(friend => friend._id === selectedUser)
-        : friends.some(friend => friend._id === selectedUser._id);
-      
-      if (!userExists) {
-        console.log("Selected user not found in friends list, clearing selection");
-        setselectedUser(null);
-      }
+    // Skip validation entirely if no selectedUser or friends list is empty/loading
+    if (!selectedUser || !friends || friends.length === 0) return;
+    
+    // Check if selectedUser exists in friends list
+    const userExists = typeof selectedUser === 'string' 
+      ? friends.some(friend => friend._id === selectedUser)
+      : friends.some(friend => friend._id === selectedUser._id);
+    
+    // Only clear if user definitely doesn't exist AND we have a populated friends list
+    if (!userExists && friends.length > 0) {
+      console.log("Selected user not found in friends list, clearing selection");
+      setselectedUser(null);
     }
   }, [selectedUser, friends, setselectedUser]);
   return (
@@ -49,7 +51,7 @@ export const Home = () => {
         } ${selectedUser ? "h-[100vh] md:h-[calc(100vh-130px)]" : "h-[calc(100vh-130px)]"}`}
       >
         <Sidebar />
-        <div className="flex-1 min-w-0 h-full">
+        <div className="flex-1 min-w-0 h-full relative">
           {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
         </div>
      </div>

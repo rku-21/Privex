@@ -71,7 +71,7 @@ export const useAuthStore = create((set, get) => ({
     try {
       const res = await axiosInstance.put("auth/update-profile", data);
       set({ authUser: res.data });
-      toast.success("Profile updated successfully");
+     
     } catch (error) {
       toast.error(error.response?.data?.message || "Update failed");
     } finally {
@@ -192,11 +192,8 @@ export const useAuthStore = create((set, get) => ({
       const callStore = useCallStore.getState();
       callStore.handleIncomingCall(data);
       
-      // Simple notification that a call is incoming
-      toast.success("Incoming call received", {
-        id: "incoming-call",
-        duration: 3000
-      });
+      
+     
     });
     
 

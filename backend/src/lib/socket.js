@@ -7,7 +7,6 @@ import { addUserSocket, removeUserSocket, getUserSockets, getOnlineUsers } from 
 
 const app = express();
 const server = http.createServer(app);
-
 const io = new Server(server, {
   cors: {
     origin: process.env.NODE_ENV === "production" ? true : "http://localhost:5173",
@@ -17,44 +16,39 @@ const io = new Server(server, {
   pingInterval: 25000,
 });
 
-// ============================================
-// PRODUCTION CALL STATE MANAGEMENT
-// ============================================
-// In-memory call sessions (short-lived, can move to Redis later)
+
 const activeCalls = new Map();
 const callTimeouts = new Map();
 
-const CALL_TIMEOUT_MS = 30000; // 30 seconds
+const CALL_TIMEOUT_MS = 30000; 
 const MAX_ICE_BUFFER_SIZE = 50;
 
-// Call states: "ringing" | "accepted" | "ended"
-
-/**
- * Emit event to ALL devices of a user (multi-device support)
+/** 
+ 
  * @param {string} userId 
  * @param {string} event 
  * @param {object} payload 
  */
+
 async function emitToUser(userId, event, payload) {
   try {
     const socketIds = await getUserSockets(userId);
     if (socketIds.length === 0) {
-      console.log(`⚠️ User ${userId} has no active sockets`);
+      console.log(` User ${userId} is offLine, cannot emit ${event}`);
       return false;
     }
     socketIds.forEach(socketId => {
       io.to(socketId).emit(event, payload);
     });
-    console.log(`✅ Emitted ${event} to user ${userId} (${socketIds.length} devices)`);
+    console.log(`Emitted ${event} to user ${userId} (${socketIds.length} devices)`);
     return true;
   } catch (error) {
-    console.error(`❌ Error emitting to user ${userId}:`, error);
+    console.error(`Error while emitting to user ${userId}:`, error);
     return false;
   }
 }
 
 /**
- * Clean up call state and timers
  * @param {string} callId 
  */
 function cleanupCall(callId) {
@@ -63,59 +57,43 @@ function cleanupCall(callId) {
     callTimeouts.delete(callId);
   }
   activeCalls.delete(callId);
-  console.log(`🧹 Cleaned up call ${callId}`);
+  console.log(`Cleaned up call ${callId}`);
 }
-
-// ============================================
-// SOCKET CONNECTION HANDLER
-// ============================================
 io.on("connection", async (socket) => {
   const userId = socket.handshake.query.userId;
   
   if (!userId || userId === "undefined" || userId === "null") {
-    console.log("❌ User connected without valid userId:", userId);
+    console.log("This user is connected without valid userId:", userId);
     socket.disconnect(true);
     return;
   }
 
-  console.log(`✅ User connected: ${userId}, socketId: ${socket.id}`);
+  console.log(`User connected: ${userId}, socketId: ${socket.id}`);
   
   try {
-    // Add to Redis (multi-device support)
     await addUserSocket(userId, socket.id);
     socket.userId = userId;
-
-    // Broadcast updated online users to all clients
     const onlineUsers = await getOnlineUsers();
-    console.log(`📢 Broadcasting online users:`, onlineUsers);
+    console.log(`📢 Broadcasting online users after connection:`, onlineUsers);
     io.emit("getOnlineUsers", onlineUsers);
   } catch (error) {
-    console.error("❌ Error connecting user socket:", error);
-    socket.emit("connection-error", { message: "Failed to register connection" });
+    console.error("Error connecting user socket:", error);
+    socket.emit("connection-error", { message: "connection failed" });
   }
 
-  // ============================================
-  // CALL EVENTS - PRODUCTION READY
-  // ============================================
-
-  /**
-   * STEP 1: Initiate Call
-   * Frontend emits: { to, offer, callType, from }
-   */
   socket.on("call-user", async ({ to, offer, callType, from }) => {
     try {
-      console.log(`📞 [CALL-USER] ${from} calling ${to} (${callType})`);
+      console.log(`${from} calling ${to} (${callType})`);
 
-      // Validate inputs
       if (!to || !offer || !from) {
-        console.error("❌ Invalid call-user payload");
+        console.error("Invalid call user payload");
         return;
       }
 
-      // Fetch caller details
+     
       const caller = await User.findById(from).select("fullname profilePicture");
       if (!caller) {
-        console.error(`❌ Caller ${from} not found in database`);
+        console.error(`Caller ${from} not found in database`);
         socket.emit("call-error", { message: "Caller not found" });
         return;
       }
@@ -129,15 +107,15 @@ io.on("connection", async (socket) => {
         receiverId: to,
         callType,
         status: "ringing",
-        iceCandidates: [], // Buffer for early ICE candidates
+        iceCandidates: [], 
         createdAt: Date.now(),
       });
 
-      // Set automatic timeout (30 seconds)
+      
       const timeout = setTimeout(async () => {
         const call = activeCalls.get(callId);
         if (call && call.status === "ringing") {
-          console.log(`⏱️ Call ${callId} timed out`);
+          console.log(`Call ${callId} timed out`);
           
           await emitToUser(call.callerId, "call-timeout", { callId });
           await emitToUser(call.receiverId, "call-timeout", { callId });
@@ -148,7 +126,7 @@ io.on("connection", async (socket) => {
 
       callTimeouts.set(callId, timeout);
 
-      // Emit to receiver (all devices)
+     
       const sent = await emitToUser(to, "incoming-call", {
         callId,
         from: {
@@ -161,16 +139,16 @@ io.on("connection", async (socket) => {
       });
 
       if (!sent) {
-        console.log(`⚠️ Receiver ${to} is offline`);
+        console.log(` Receiver ${to} is offline`);
         socket.emit("call-error", { message: "User is offline" });
         cleanupCall(callId);
       } else {
-        // 🆕 Send callId back to caller so they can track it
+        
         socket.emit("call-initiated", { callId });
-        console.log(`✅ Call ${callId} initiated successfully, callId sent to caller`);
+        console.log(` Call ${callId} initiated successfully, callId sent to caller`);
       }
     } catch (error) {
-      console.error("❌ Error in call-user:", error);
+      console.error(" Error in call-user:", error);
       socket.emit("call-error", { message: "Failed to initiate call" });
     }
   });

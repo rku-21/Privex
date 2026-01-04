@@ -45,8 +45,8 @@ export const Friends = () => {
   };
 
   const handleViewProfile = (userId) => {
-    // Navigate to profile page with user ID
-    navigate(`/profile/${userId}`);
+    // Redirect to construction page - feature under development
+    navigate('/construction');
   };
 
   return (
@@ -103,15 +103,11 @@ export const Friends = () => {
         
      {!friendsPagination.isLoading && friends.length === 0 && (
   <div className="no-friends-container">
-    <div className="empty-state-illustration">
-      <div className="empty-state-circles">
-        <div className="empty-circle"></div>
-        <div className="empty-circle"></div>
-      </div>
-      <span className="lonely-emoji">🫂</span>
+    <div className="text-center p-8">
+      <div className="text-6xl mb-4">👥</div>
+      <h2 className="text-2xl font-bold mb-2">No Friends Yet</h2>
+      <p className="text-gray-600">Start connecting with people!</p>
     </div>
-    <p className="no-friends-text">No friends yet. Start connecting!</p>
-    
   </div>
 )}
       </div>

@@ -90,10 +90,9 @@ export const Profile = () => {
         {/* Cover Photo with Back Arrow */}
         <div className="relative">
           <img 
-            src={authUser?.coverPhoto || "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&h=400&fit=crop"} 
+            src={authUser?.coverPhoto || "/default-cover.jpg"} 
             alt="Cover" 
-            className="w-full h-48 md:h-64 object-cover cursor-pointer"
-            onClick={() => setShowCoverModal(true)}
+            className="w-full h-48 md:h-64 object-cover"
           />
           
           {/* Back Arrow - floating over cover photo */}
@@ -106,19 +105,36 @@ export const Profile = () => {
           </button>
           
           {/* Edit Cover Button */}
-          <label className="absolute bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 cursor-pointer transition">
-            <Camera size={18} className={theme === "dark" ? "text-gray-300" : "text-gray-700"} />
-            <span className={`text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
-              Edit Cover
-            </span>
+          <div className="absolute bottom-4 right-4">
             <input
+              id="cover-upload"
               type="file"
               accept="image/*"
               className="hidden"
               onChange={handleCoverPhotoUpload}
               disabled={isUpdateingProfileUP}
             />
-          </label>
+            <label 
+              htmlFor="cover-upload"
+              className="bg-gray-800 rounded-lg px-4 py-2 shadow-lg hover:bg-gray-700 flex items-center gap-2 cursor-pointer transition"
+            >
+              <Camera size={18} className="text-gray-300" />
+              <span className="text-sm font-medium text-gray-300">
+                {isUpdateingProfileUP ? "Uploading..." : "Edit Cover"}
+              </span>
+            </label>
+          </div>
+          
+          {/* View Full Cover Button */}
+          <button
+            onClick={() => setShowCoverModal(true)}
+            className="absolute bottom-4 left-4 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg flex items-center gap-2 transition"
+          >
+            <Search size={18} className="text-white" />
+            <span className="text-sm font-medium text-white">
+              View
+            </span>
+          </button>
         </div>
 
         {/* Profile Header */}
@@ -134,17 +150,19 @@ export const Profile = () => {
                     className="w-full h-full rounded-full border-4 border-white dark:border-gray-800 shadow-lg object-cover cursor-pointer"
                     onClick={() => setShowAvatarModal(true)}
                   />
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleProfileImageUpload}
+                    disabled={isUpdateingProfileUP}
+                  />
                   <label 
+                    htmlFor="avatar-upload"
                     className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 p-2.5 rounded-full shadow-lg transition cursor-pointer"
                   >
                     <Camera size={18} className="text-white" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleProfileImageUpload}
-                      disabled={isUpdateingProfileUP}
-                    />
                   </label>
                 </div>
 
@@ -339,7 +357,7 @@ export const Profile = () => {
           onClick={() => setShowCoverModal(false)}
         >
           <img
-            src={authUser?.coverPhoto || "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1200&h=400&fit=crop"}
+            src={authUser?.coverPhoto || "/default-cover.jpg"}
             alt="Cover Large"
             className="rounded-xl max-h-[80%] max-w-[80%] object-cover"
           />

@@ -114,10 +114,10 @@ endCall: () => {
   
   console.log("Call state completely reset, onCallWithWhom cleared");
   
-  // Clean up the chat container state
-  const chatStore = useChatStore.getState();
-  chatStore.setselectedUser(null);
+  // DON'T clear selected user - keep them in the chat after call ends
+  // Users should stay in the conversation they were in
   
+  console.log("Call ended, user remains in current chat");
   // Force a navigation to clear the UI state
   if (typeof window !== 'undefined') {
     window.history.pushState({}, '', '/');
@@ -324,7 +324,7 @@ endCall: () => {
           }, 1000); // Small delay to allow for potential reconnection
         }
       } else if (pc.iceConnectionState === 'connected') {
-        toast.success("Media connection established!");
+        console.log("Media connection established!");
       }
     };
     
@@ -507,7 +507,7 @@ endCall: () => {
           }, 1000); // Small delay to allow for potential reconnection
         }
       } else if (pc.iceConnectionState === 'connected') {
-        toast.success("Media connection established!");
+        console.log("Media connection established!");
       }
     };
     

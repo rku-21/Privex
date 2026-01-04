@@ -164,24 +164,6 @@ export default function Signup() {
         
         
         }`}> Privex</h1>
-
-        {/* Theme Toggle */}
-        <div className="flex items-center space-x-3">
-          <Sun className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-yellow-500'}`} />
-          <button
-            onClick={toggleTheme}
-            className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors duration-300 ${
-              isDark ? 'bg-blue-600' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ${
-                isDark ? 'translate-x-5' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
-          <Moon className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-gray-400'}`} />
-        </div>
       </div>
 
       {/* Main */}

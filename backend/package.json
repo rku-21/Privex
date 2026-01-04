@@ -9,7 +9,8 @@
     "start": "node src/index.js",
     "build": "cd ../frontend/chat_app && npm install && npm run build",
     "migrate:cleanup-users": "node src/scripts/cleanupOldUsers.js",
-    "db:clean": "node src/scripts/cleanDatabase.js"
+    "db:clean": "node src/scripts/cleanDatabase.js",
+    "seed:test-users": "node src/seeds/populateTestData.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

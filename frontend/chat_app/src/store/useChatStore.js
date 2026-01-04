@@ -282,7 +282,7 @@ export const useChatStore=create((set,get)=>({
     removingFriendRequest:async(Id)=>{
       try{
         const res=await axiosInstance.delete(`/messages/friends/cancel/${Id}`);
-        toast.success("Friend request cancelled");
+        
       }
       catch(error){
         toast.error(error.response?.data?.message || "Failed to cancel request");
