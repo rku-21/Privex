@@ -34,7 +34,7 @@ app.use(
   })
 );
 
-// API routes FIRST
+// API routes 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
@@ -86,35 +86,23 @@ if (process.env.NODE_ENV === "production") {
 
 
 app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err);
+  console.error('Server Error', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-console.log('🎯 Starting server...');
-console.log('📍 Environment:', process.env.NODE_ENV || 'development');
-console.log('🔌 Port:', port);
-
-// Check email service configuration
+console.log('Starting server...');
 if (!process.env.BREVO_API_KEY) {
-  console.error('⚠️⚠️⚠️ EMAIL SERVICE NOT CONFIGURED ⚠️⚠️⚠️');
-  console.error('❌ BREVO_API_KEY: NOT SET');
-  console.error('⚠️ OTP emails will FAIL until this is configured in Render dashboard');
-} else {
-  console.log('✅ Brevo email service configured');
+  console.error('Email servie not configured');
+ } else {
+  console.log('email service configured');
 }
 
 server.listen(port, '0.0.0.0', async () => {
-  console.log(`✅ Server is running on port ${port}`);
-  console.log(`🌐 Server is listening on http://0.0.0.0:${port}`);
-  
-  // Test email service
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     await testEmailService();
   }
-  
-  // Connect to database asynchronously (don't block server startup)
   connectDB().catch(err => {
-    console.error('⚠️ Database connection failed:', err.message);
+    console.error('Database connection failed', err.message);
   });
 });
 

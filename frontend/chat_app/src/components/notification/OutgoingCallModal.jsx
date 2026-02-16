@@ -26,17 +26,17 @@ const OutgoingCallModal = () => {
   return () => clearTimeout(connectTimer);
 }, []);
 
-// ✅ Timer starts only when call is accepted and stops/resets when ended
+
 useEffect(() => {
   let timer;
   if (isCallAccepted) {
-    // Reset timer every time a new call is accepted
+  
     setCallDuration(0);
     timer = setInterval(() => {
       setCallDuration((prev) => prev + 1);
     }, 1000);
   } else {
-    // Stop and reset timer if call ends or not accepted
+   
     setCallDuration(0);
     clearInterval(timer);
   }
@@ -61,46 +61,38 @@ useEffect(() => {
       .padStart(2, "0")}`;
   };
 
-  // -------------------- END / CANCEL CALL --------------------
+  
   const handleEndCall = () => {
-    console.log("Handle end/cancel call triggered");
     const callStore = useCallStore.getState();
     const socket = useAuthStore.getState().socket;
-    const currentCallId = callStore.currentCallId;  // 🆕 Use callId instead of userId
+    const currentCallId = callStore.currentCallId;  
 
     if (!currentCallId || !socket){
-      console.log("No callId or socket available, cannot emit call-ended/cancel-call");
+     
       return;
     };
 
     if (callStore.isCallAccepted) {
-      console.log("Ending ongoing call with callId:", currentCallId);
-      socket.emit("call-ended", { callId: currentCallId });  // 🆕 Use callId
+       socket.emit("call-ended", { callId: currentCallId }); 
     } else {
-      console.log("Cancelling call before answer, callId:", currentCallId);
-      socket.emit("cancel-call", { callId: currentCallId });  // 🆕 Use callId
+     socket.emit("cancel-call", { callId: currentCallId }); 
     }
-    console.log("Emitted call-ended/cancel-call event for callId:", currentCallId);
-
     callStore.endCall();
   };
-  // finally done the function
-  // ------------------------------------------------------------
-
-  return (
+   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-gray-950 via-purple-950 to-violet-950 text-white">
       <div className="relative w-full h-screen overflow-hidden">
-        {/* Background Animation */}
+       
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.03),_rgba(0,0,0,1))] animate-pulse"></div>
 
         {callType === "audio" ? (
-          // 🔊 AUDIO CALL
+         
           <div className="flex flex-col items-center justify-center h-full relative">
             <div className="absolute">
               <div className="w-96 h-96 rounded-full bg-white/5 animate-ping"></div>
             </div>
 
-            {/* Center Avatar */}
+          
             <div className="relative z-10 mb-8">
               <div className="w-48 h-48 rounded-full overflow-hidden ring-8 ring-white/10 shadow-2xl">
                 <img
@@ -111,7 +103,7 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Caller Info */}
+           
             <div className="text-center z-10">
               <h2 className="text-4xl font-bold mb-2">{calleeData.fullname}</h2>
               <p className="text-xl text-white/70 mb-1">
@@ -125,9 +117,9 @@ useEffect(() => {
             </div>
           </div>
         ) : (
-          // 🎥 VIDEO CALL
+        
           <div className="relative w-full h-full flex flex-col items-center justify-center">
-            {/* Center Avatar */}
+           
             <div className="relative z-10 flex flex-col items-center justify-center text-center">
               <div className="w-48 h-48 rounded-full overflow-hidden ring-8 ring-white/10 shadow-2xl mb-4">
                 <img
@@ -145,7 +137,7 @@ useEffect(() => {
               )}
             </div>
 
-            {/* Mini Caller Window (Your Camera Preview) - Only shown for video calls */}
+           
             {callType === "video" && (
               <div className="absolute top-6 right-6 w-36 h-52 sm:w-40 sm:h-56 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-20 group hover:scale-105 transition-transform">
                 <video
@@ -156,7 +148,7 @@ useEffect(() => {
                   className="w-full h-full object-cover"
                   ref={(videoElement) => {
                     if (videoElement) {
-                      // Get local video stream from useCallStore
+                   
                       const { localStream } = useCallStore.getState();
                       if (localStream && videoElement.srcObject !== localStream) {
                         videoElement.srcObject = localStream;
@@ -179,11 +171,11 @@ useEffect(() => {
           </div>
         )}
 
-        {/* 🎛️ Controls */}
+       
         <div className="absolute bottom-0 left-0 right-0 p-8 z-30">
           <div className="max-w-md mx-auto bg-black/50 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-white/10">
             <div className="flex items-center justify-center space-x-6">
-              {/* Mute */}
+              
               <button
                 onClick={() => useCallStore.getState().toggleMute()}
                 className={`p-5 rounded-full transition-all transform hover:scale-110 ${
@@ -195,7 +187,7 @@ useEffect(() => {
                 {isMuted ? <MicOff className="w-6 h-6 text-white" /> : <Mic className="w-6 h-6 text-white" />}
               </button>
 
-              {/* End / Cancel Call */}
+             
               <button
                 onClick={handleEndCall}
                 className="p-6 bg-red-500 rounded-full hover:bg-red-600 transition-all transform hover:scale-110 shadow-lg"
@@ -203,7 +195,7 @@ useEffect(() => {
                 <PhoneOff className="w-7 h-7 text-white" />
               </button>
 
-              {/* Video Toggle */}
+             
               {callType === "video" ? (
                 <button
                   onClick={() => setIsVideoOff(!isVideoOff)}
@@ -222,7 +214,7 @@ useEffect(() => {
               )}
             </div>
 
-            {/* Extra Controls for Video */}
+          
             {callType === "video" && (
               <div className="flex items-center justify-center space-x-4 mt-4 pt-4 border-t border-white/10">
                 <button className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all">

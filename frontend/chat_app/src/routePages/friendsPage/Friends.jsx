@@ -7,7 +7,6 @@ import BottomNavbar from '../../components/bottomNav/BottomNavbar';
 import { Navbar } from '../../components/navbar/Navbar';
 import { useChatStore } from '../../store/useChatStore';
 import toast from 'react-hot-toast';
-import './friends.css';
 import { useThemeStore } from '../../store/useThemeStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,7 +16,7 @@ export const Friends = () => {
   const navigate = useNavigate();
   const observerRef = useRef();
   
-  // Infinite scroll - last friend element reference
+ 
   const lastFriendRef = useCallback((node) => {
     if (friendsPagination.isLoading) return;
     if (observerRef.current) observerRef.current.disconnect();
@@ -40,12 +39,12 @@ export const Friends = () => {
       await removeFriend(Id);
       await getFriends(true);
     } catch (error) {
-      // Error already handled in the store
+      
     }
   };
 
   const handleViewProfile = (userId) => {
-    // Redirect to construction page - feature under development
+   
     navigate('/construction');
   };
 

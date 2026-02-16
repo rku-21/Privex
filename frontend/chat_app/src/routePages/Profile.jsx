@@ -15,7 +15,7 @@ export const Profile = () => {
   const [showCoverModal, setShowCoverModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   
-  // Form states
+
   const [editedAbout, setEditedAbout] = useState(authUser?.about || "I am on Privex");
   const [editedName, setEditedName] = useState(authUser?.fullname || "");
   const [editedEmail, setEditedEmail] = useState(authUser?.email || "");
@@ -50,7 +50,7 @@ export const Profile = () => {
     try {
       const updates = {};
       
-      // Only include changed fields
+     
       if (editedAbout !== (authUser?.about || "I am on Privex")) {
         updates.about = editedAbout;
       }
@@ -85,9 +85,9 @@ export const Profile = () => {
         : "bg-gray-50"
     }`}>
 
-      {/* Main Content - No top padding since cover starts from top */}
+      
       <div className="pb-20">
-        {/* Cover Photo with Back Arrow */}
+       
         <div className="relative">
           <img 
             src={authUser?.coverPhoto || "/default-cover.jpg"} 
@@ -95,7 +95,7 @@ export const Profile = () => {
             className="w-full h-48 md:h-64 object-cover"
           />
           
-          {/* Back Arrow - floating over cover photo */}
+        
           <button
             onClick={() => navigate(-1)}
             className="absolute top-4 left-4 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm transition"
@@ -104,7 +104,7 @@ export const Profile = () => {
             <ArrowLeft className="text-white" size={24} />
           </button>
           
-          {/* Edit Cover Button */}
+         
           <div className="absolute bottom-4 right-4">
             <input
               id="cover-upload"
@@ -125,7 +125,7 @@ export const Profile = () => {
             </label>
           </div>
           
-          {/* View Full Cover Button */}
+       
           <button
             onClick={() => setShowCoverModal(true)}
             className="absolute bottom-4 left-4 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg flex items-center gap-2 transition"
@@ -137,12 +137,12 @@ export const Profile = () => {
           </button>
         </div>
 
-        {/* Profile Header */}
+       
         <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} shadow-sm`}>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative -mt-16 pb-6">
               <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
-                {/* Profile Picture with Edit */}
+             
                 <div className="relative group w-32 h-32">
                   <img 
                     src={authUser?.profilePicture || "/avatar.png"} 
@@ -166,7 +166,7 @@ export const Profile = () => {
                   </label>
                 </div>
 
-                {/* User Info */}
+             
                 <div className="flex-1 text-center sm:text-left sm:ml-4 mt-4 sm:mt-0">
                   <h1 className={`text-2xl font-bold ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
                     {authUser?.fullname}
@@ -177,7 +177,7 @@ export const Profile = () => {
                   <p className="text-sm text-green-600 dark:text-green-400 mt-1">Online</p>
                 </div>
 
-                {/* Action Buttons */}
+              
                 <div className="flex gap-2 mt-4 sm:mt-0">
                   <button 
                     onClick={() => {
@@ -200,7 +200,7 @@ export const Profile = () => {
           </div>
         </div>
 
-        {/* About Section */}
+       
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg shadow p-6`}>
             <div className="flex items-center justify-between mb-4">
@@ -236,12 +236,12 @@ export const Profile = () => {
         </div>
       </div>
 
-      {/* Bottom Navbar */}
+     
       <div className="fixed bottom-0 w-full z-40">
         <BottomNavbar />
       </div>
 
-      {/* Edit Profile Modal */}
+     
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} rounded-lg max-w-md w-full p-6`}>
@@ -336,7 +336,7 @@ export const Profile = () => {
         </div>
       )}
 
-      {/* Avatar Modal */}
+      
       {showAvatarModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 cursor-zoom-out"
@@ -350,7 +350,7 @@ export const Profile = () => {
         </div>
       )}
 
-      {/* Cover Photo Modal */}
+     
       {showCoverModal && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 cursor-zoom-out"

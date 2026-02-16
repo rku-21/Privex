@@ -27,10 +27,8 @@ const messageSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-// Compound index for cursor-based pagination (sort by newest first)
-messageSchema.index({ chatId: 1, createdAt: -1 });
 
-// Index for unread messages count
+messageSchema.index({ chatId: 1, createdAt: -1 });
 messageSchema.index({ chatId: 1, read: 1 });
 
 const Message = mongoose.model("Message", messageSchema);

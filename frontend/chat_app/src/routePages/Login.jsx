@@ -51,7 +51,7 @@ export default function Login() {
       <div className="flex items-center justify-center min-h-screen">
         <div
           className={`w-full max-w-md rounded-2xl shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'} p-8 m-2`}
-          style={{ marginTop: '4rem' }} // Push below fixed header
+          style={{ marginTop: '4rem' }}
         >
           {/* Heading */}
           <div className="flex flex-col items-center mb-8">
@@ -77,7 +77,7 @@ export default function Login() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
+       
             <div>
               <label
                 htmlFor="email"
@@ -163,15 +163,7 @@ export default function Login() {
             <div className={`flex-grow border-t ${isDark ? 'border-gray-600' : 'border-gray-300'}`} />
           </div>
 
-          {/* Google Login */}
-          {/* <a
-            href="/auth/google"
-            className="flex items-center justify-center w-full py-3 px-4 border rounded-lg hover:shadow transition-colors duration-200"
-          >
-            {/* <img src="/google-icon.svg" alt="Google" className="w-5 h-5 mr-2" /> */}
-            {/* <i className="fa-brands fa-google w-5 h-5 mr-3 mt-2"></i>
-            Login with Google
-          // </a> */}
+          
 
           {/* Signup */}
           <div className="text-center mt-6">
@@ -190,7 +182,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Virtual Assistant */}
+      
       {showAssistant && <VirtualAssistant onDismiss={() => setShowAssistant(false)} />}
     </div>
   );

@@ -4,20 +4,6 @@ import { axiosInstance } from "../lib/axios"
 import {useAuthStore} from "./useAuthStore"
 import { io } from "socket.io-client"
 import { use } from "react"
-// Try to load selected user from localStorage
-// const getInitialSelectedUser = () => {
-//   try {
-//     const storedUser = localStorage.getItem("chat-selected-user");
-//     if (storedUser) {
-//       return JSON.parse(storedUser);
-//     }
-//   } catch (error) {
-//     console.error("Error parsing stored selected user:", error);
-//     localStorage.removeItem("chat-selected-user");
-//   }
-//   return null;
-// };
-
 export const useChatStore=create((set,get)=>({
     messages:[],
     friends:[],
@@ -25,14 +11,14 @@ export const useChatStore=create((set,get)=>({
       sent: [],
       received: [],
     },
-    unreadCounts: {},  // Move unreadCounts to top level
+    unreadCounts: {},  
     selectedUser:null,
     isUsersLoding:false,
     isMessagesLoding:false,
     Users:[],
     searchResults: [],
     
-    // Pagination states
+    
     friendsPagination: {
       nextCursor: null,
       hasMore: false,
@@ -74,15 +60,14 @@ export const useChatStore=create((set,get)=>({
       }
     },
     
-    // Search users with cursor-based pagination
+    
     searchUsers: async (query, reset = true) => {
         const currentState = get();
         
         console.log("searchUsers called:", { query, reset });
         
         if (!query || query.trim() === '') {
-            console.log("Empty query, clearing results");
-            set({ 
+           set({ 
                 searchResults: [], 
                 searchPagination: { nextCursor: null, hasMore: false, isLoading: false, query: '' }
             });
@@ -103,11 +88,7 @@ export const useChatStore=create((set,get)=>({
                 limit: '20'
             });
             if (cursor) params.append('cursor', cursor);
-            
-            console.log("Making request to:", `/messages/search?${params}`);
             const res = await axiosInstance.get(`/messages/search?${params}`);
-            console.log("Search response:", res.data);
-            
             set(state => ({
                 searchResults: reset ? res.data.users : [...state.searchResults, ...res.data.users],
                 searchPagination: {
@@ -118,8 +99,7 @@ export const useChatStore=create((set,get)=>({
                 },
             }));
         } catch (error) {
-            console.error("Search error:", error);
-            toast.error(error.response?.data?.message || "Failed to search users");
+           toast.error(error.response?.data?.message || "Failed to search users");
             set({ searchPagination: { ...currentState.searchPagination, isLoading: false } });
         } finally {
             set({ isUsersLoding: false });
@@ -269,13 +249,10 @@ export const useChatStore=create((set,get)=>({
     },
     SendingFriendRequest:async(Id)=>{
       try {
-        console.log("Sending friend request to:", Id);
-        const res=await axiosInstance.post(`/messages/friends/send/${Id}`);
-        console.log("Friend request sent successfully:", res.data);
-        return res.data;
+      const res=await axiosInstance.post(`/messages/friends/send/${Id}`);
+       return res.data;
       }
       catch(error){
-        console.error("Error in SendingFriendRequest:", error.response?.data || error.message);
         throw error;
       }
     },
@@ -289,7 +266,7 @@ export const useChatStore=create((set,get)=>({
       }
     },
 
-    // function to remove an existing friend
+    
     removeFriend: async(Id) => {
       try {
         const res = await axiosInstance.delete(`/messages/friends/remove/${Id}`);
@@ -302,7 +279,7 @@ export const useChatStore=create((set,get)=>({
       }
     },
 
-    // function to accept the request
+    
     AcceptsTheRequests:async(Id)=>{
       try {
         const res=await axiosInstance.post(`/messages/friends/accept/${Id}`);
@@ -314,12 +291,9 @@ export const useChatStore=create((set,get)=>({
 
     },
 
-
-
-
-  sendMessages: async (messageData) => {
+   sendMessages: async (messageData) => {
     const { selectedUser, messages } = get();
-    //  make a temporary message object for optimistic UI
+    
         const  tempId=Date.now().toString();
         const tempMessage={
           _id: tempId,
@@ -338,7 +312,7 @@ export const useChatStore=create((set,get)=>({
     }
     catch(error){
       toast.error(error?.response?.data?.message );
-      // Update the temporary message status to 'failed'
+      
       set({
         messages: get().messages.map(msg =>
           msg._id === tempId ? { ...msg, status: 'failed' } : msg
@@ -347,82 +321,65 @@ export const useChatStore=create((set,get)=>({
     } 
   },
   SubscribeToMessages: () => {
-    console.log("Subscribing to new messages via socket");
-    const socket = useAuthStore.getState().socket;
+   const socket = useAuthStore.getState().socket;
     if (!socket) {
-      console.log("No socket available, cannot subscribe");
-      return;
+        return;
     }
 
-    // 🔄 Remove any previous "newMessage" listener to prevent duplicate firing
+    
     socket.off("newMessage");
 
     socket.on("newMessage", (newMessage) => {
       const { selectedUser } = get();
       const currentUserId = useAuthStore.getState().authUser?._id;
-      console.log("📩 New message received via socket:", newMessage);
-      console.log("Current selected user:", selectedUser?.fullname, selectedUser?._id);
-      console.log("Current user ID:", currentUserId);
-
-      // Parse chatId to determine if this message involves current user
+      console.log("New message received via socket:", newMessage);
+      
+      
       const [userId1, userId2] = newMessage.chatId.split('_');
       const isMessageForMe = userId1 === currentUserId || userId2 === currentUserId;
 
       if (!isMessageForMe) {
-        console.log("Message not for current user, ignoring");
-        return;
+         return;
       }
 
-      // Determine who sent the message (the other person in the chat)
+      
       const messageSenderId = newMessage.senderId;
       const isFromMe = messageSenderId === currentUserId;
 
-      console.log("Message is from me:", isFromMe);
-      console.log("Message sender ID:", messageSenderId);
-
-      // ✅ Case 1: Message is from currently selected user (incoming message in open chat)
       if (selectedUser && messageSenderId === selectedUser._id) {
-        console.log("✅ Message is from selected user, adding to chat");
         set((state) => ({
           messages: [...state.messages, newMessage],
         }));
-        // Mark as read since chat is open
+        
         axiosInstance.post(`/messages/${messageSenderId}/read`)
-          .catch(err => console.error("Error marking message as read:", err));
+          .catch(err => console.error("Error", err));
       } 
-      // ✅ Case 2: Message from someone else (not current chat) - increment unread count
+      
       else if (!isFromMe) {
-        console.log("📬 Message is from other user, incrementing unread count for:", messageSenderId);
-        set((state) => ({
+       set((state) => ({
           unreadCounts: {
             ...state.unreadCounts,
             [messageSenderId]: (state.unreadCounts?.[messageSenderId] || 0) + 1,
           },
         }));
       }
-      // ✅ Case 3: Message sent by me (from another device/tab) - add to chat if same user selected
+      
       else if (isFromMe && selectedUser) {
-        console.log("💬 Message sent by me, adding to current chat");
+      
         set((state) => ({
           messages: [...state.messages, newMessage],
         }));
       }
     });
-
-    // Handle errors
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-    });
+   socket.on("connect_error", (error) => {
+   });
 },
-
-
-     unsubscribeToMessages:()=>{
+ unsubscribeToMessages:()=>{
         const socket=useAuthStore.getState().socket;
         socket.off("newMessage");
      },
     setselectedUser:(selectedUser)=>{ 
       set({selectedUser});
-      // Save to localStorage if exists, otherwise remove
       if (selectedUser) {
         localStorage.setItem("chat-selected-user", JSON.stringify(selectedUser));
       } else {
@@ -441,7 +398,7 @@ export const useChatStore=create((set,get)=>({
     ResetUnreadCount: (senderId) => {
       set((state) => {
         const newCounts = { ...state.unreadCounts };
-        delete newCounts[senderId]; // remove the key completely
+        delete newCounts[senderId]; 
         return { unreadCounts: newCounts };
       });
     },

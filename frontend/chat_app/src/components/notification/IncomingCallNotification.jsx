@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 
 const IncomingCallNotification = () => {
-  // Use the full store to ensure we get all updates
+ 
   const callStore = useCallStore();
 
   const { isReceivingCall, incomingCall, acceptCall, rejectCall,setCallWithWhom } = callStore;
@@ -28,11 +28,11 @@ const IncomingCallNotification = () => {
     }
   }, [isReceivingCall, incomingCall]);
 
-  // Extra useEffect to monitor state changes from the store
+  
   useEffect(() => {
     console.log("⚠️⚠️⚠️ Setting up direct state listener in IncomingCallNotification");
     
-    // Subscribe to the call store to detect state changes
+   
     const unsubscribe = useCallStore.subscribe(
       (state) => [state.isReceivingCall, state.incomingCall],
       ([newIsReceiving, newIncoming], [prevIsReceiving, prevIncoming]) => {
@@ -40,32 +40,30 @@ const IncomingCallNotification = () => {
           { prev: { isReceiving: prevIsReceiving, hasIncoming: !!prevIncoming }, 
             new: { isReceiving: newIsReceiving, hasIncoming: !!newIncoming } });
             
-        // Force re-render the component on any state changes
+       
         if (prevIsReceiving !== newIsReceiving || !!prevIncoming !== !!newIncoming) {
           console.log("⚠️⚠️⚠️ FORCING COMPONENT UPDATE");
-          setRing(false); // Change state to force re-render
+          setRing(false); 
         }
       }
     );
     
-    // Setup a global listener for call-ended events
+   
     const handleCallEnded = () => {
-      console.log("⚠️⚠️⚠️ GLOBAL CALL-ENDED EVENT CAPTURED");
-      useCallStore.setState({
+       useCallStore.setState({
         isReceivingCall: false,
         incomingCall: null
       });
     };
     
-    // Add global event listener as a fallback
+   
     window.addEventListener('call-ended', handleCallEnded);
     
-    // Setup interval to check for stale call state
+   
     const interval = setInterval(() => {
       const state = useCallStore.getState();
       if (state.isReceivingCall && Date.now() - window._lastIncomingCallTime > 60000) {
-        console.log("⚠️⚠️⚠️ DETECTED STALE CALL STATE, RESETTING");
-        useCallStore.setState({
+          useCallStore.setState({
           isReceivingCall: false,
           incomingCall: null
         });
@@ -80,21 +78,17 @@ const IncomingCallNotification = () => {
   }, []);
 
   if (!isReceivingCall || !incomingCall) {
-    console.log("Not rendering IncomingCallNotification: conditions not met");
+    console.log("Not rendering");
     return null;
   }
   
-  console.log("Rendering IncomingCallNotification");
+  console.log("Rendering incoming call");
 
   const { from, callType } = incomingCall;
   const callerName = from?.fullname || 'Unknown';
- 
-  console.log("Set onCallWithWhom in store:", callStore.onCallWithWhom);
 
   const handleAccept = async () => {
-   
-
-    await acceptCall();
+     await acceptCall();
     navigate('/', { state: { directCall: true, callerId: from?._id } });
   };
 
@@ -102,7 +96,7 @@ const IncomingCallNotification = () => {
     rejectCall();
     setCallWithWhom({});
     toast.success('Call rejected');
-    // 
+   
   };
 
   return (
@@ -125,7 +119,7 @@ const IncomingCallNotification = () => {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
 
-          {/* Profile Picture with Link */}
+       
           <Link
             to={`/profile/${from?._id}`}
             className={`w-12 h-12 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex items-center justify-center transition-transform ${
@@ -145,7 +139,7 @@ const IncomingCallNotification = () => {
             )}
           </Link>
 
-          {/* Caller Info */}
+         
           <div>
             <h3 className="text-white font-semibold">{callerName}</h3>
             <div className="flex items-center text-white/80 text-sm">
@@ -162,7 +156,7 @@ const IncomingCallNotification = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
+       
         <div className="flex items-center gap-3">
           <button
             onClick={handleReject}

@@ -85,12 +85,12 @@ export const Navbar = () => {
 
       </div>
 
-      {/* Right Section */}
+     
       <div className="flex items-center gap-2">
-        {/* Dark mode toggle */}
+       
       
 
-        {/* Menu toggle */}
+        
         <div
           className="menu-toggle text-2xl cursor-pointer px-2 hover:text-pink-400"
           onClick={toggleMenu}
@@ -99,7 +99,7 @@ export const Navbar = () => {
         </div>
       </div>
 
-      {/* Dropdown */}
+     
       {isOpen && (
         <div
           ref={dropdownRef}

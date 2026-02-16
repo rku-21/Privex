@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-
 const friendshipSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -20,10 +19,10 @@ const friendshipSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Compound indexes for efficient queries
-friendshipSchema.index({ userId: 1, status: 1, createdAt: -1 }); // For cursor-based pagination
-friendshipSchema.index({ friendId: 1, status: 1 }); // For finding incoming requests
-friendshipSchema.index({ userId: 1, friendId: 1 }, { unique: true }); // Prevent duplicates
+// Compound indexes for efficient querie 
+friendshipSchema.index({ userId: 1, status: 1, createdAt: -1 }); 
+friendshipSchema.index({ friendId: 1, status: 1 }); 
+friendshipSchema.index({ userId: 1, friendId: 1 }, { unique: true });
 
 const Friendship = mongoose.model("Friendship", friendshipSchema);
 

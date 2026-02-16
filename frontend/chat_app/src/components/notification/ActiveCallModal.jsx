@@ -30,18 +30,18 @@ const ActiveCallModal = () => {
   const { incomingCall, onCallWithWhom } = useCallStore();
   const { handleCloseChat } = ChatContainer;
 
-  // ✅ Timer starts only when the call is accepted, stops and resets when call ends
+  
   useEffect(() => {
     let timer;
 
     if (isCallAccepted) {
-      // Reset and start timer fresh every time a new call connects
+      
       setCallDuration(0);
       timer = setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
     } else {
-      // Stop and reset timer when call ends or not accepted
+      
       clearInterval(timer);
       setCallDuration(0);
     }
@@ -78,13 +78,13 @@ const ActiveCallModal = () => {
       console.log("Call was not in accepted state or no callId");
     }
 
-    // End call will clean up resources
+    
     endCall();
   };
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black text-white">
-      {/* VIDEO CALL */}
+      
       {callType === "video" ? (
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Remote Video Fullscreen */}
@@ -183,9 +183,9 @@ const ActiveCallModal = () => {
           </div>
         </div>
       ) : (
-        // AUDIO CALL
+        
         <div className="flex flex-col items-center justify-center h-full">
-          {/* Hidden Audio Element for Remote Stream */}
+       
           <audio
             ref={(audioElement) => {
               if (audioElement && remoteStream) {
@@ -205,7 +205,7 @@ const ActiveCallModal = () => {
             playsInline
           />
 
-          {/* Remote Avatar Center */}
+         
           <div className="w-48 h-48 rounded-full overflow-hidden ring-8 ring-white/10 shadow-2xl mb-4">
             <img
              src={calleeData.profilePicture || "/avatar.png"}
@@ -246,7 +246,7 @@ const ActiveCallModal = () => {
               <PhoneOff className="w-7 h-7 text-white" />
             </button>
 
-            {/* Placeholder for audio only */}
+           
             <button className="p-5 rounded-full bg-white/20 hover:bg-white/30 transition-all transform hover:scale-110">
               <Volume2 className="w-6 h-6 text-white" />
             </button>

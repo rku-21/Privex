@@ -30,7 +30,7 @@ const CallDebugPanel = () => {
   });
   
   useEffect(() => {
-    // Update stats every second
+    
     const intervalId = setInterval(updateStats, 1000);
     return () => clearInterval(intervalId);
   }, [peerConnection, localStream, remoteStream]);
@@ -39,7 +39,7 @@ const CallDebugPanel = () => {
     try {
       const newStats = { ...stats };
       
-      // Check local stream status
+    
       if (localStream) {
         const localAudioTracks = localStream.getAudioTracks();
         const localVideoTracks = localStream.getVideoTracks();
@@ -56,7 +56,7 @@ const CallDebugPanel = () => {
         newStats.localVideoStatus = 'No local stream';
       }
       
-      // Check remote stream status
+     
       if (remoteStream) {
         const remoteAudioTracks = remoteStream.getAudioTracks();
         const remoteVideoTracks = remoteStream.getVideoTracks();
@@ -73,12 +73,12 @@ const CallDebugPanel = () => {
         newStats.remoteVideoStatus = 'No remote stream';
       }
       
-      // Connection state
+      
       if (peerConnection) {
         newStats.connectionState = peerConnection.connectionState || 'Unknown';
         newStats.iceConnectionState = peerConnection.iceConnectionState || 'Unknown';
         
-        // Get advanced WebRTC stats if available
+       
         try {
           const rtcStats = await peerConnection.getStats();
           let audioLevel = null;

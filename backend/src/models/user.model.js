@@ -35,13 +35,11 @@ const userSchema = new mongoose.Schema({
   },
 }, { 
   timestamps: true,
-  strict: true, // 🔥 Prevent saving fields not in schema
-  strictQuery: true // 🔥 Also apply to queries
+  strict: true, 
+  strictQuery: true 
 });
-
-// 🔥 Pre-save hook to remove deprecated fields
 userSchema.pre('save', function(next) {
-  // Remove old schema fields if they somehow got added
+ 
   if (this.friends !== undefined) {
     this.friends = undefined;
   }
@@ -50,8 +48,6 @@ userSchema.pre('save', function(next) {
   }
   next();
 });
-
-// 🔥 Pre-update hook to remove deprecated fields from updates
 userSchema.pre('findOneAndUpdate', function(next) {
   const update = this.getUpdate();
   if (update.$set) {

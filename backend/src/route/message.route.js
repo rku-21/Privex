@@ -10,10 +10,10 @@ router.get("/friends", protectRoute, getAllfriends);
 router.post("/send/:id", protectRoute,sendMessges);
 router.post("/friends/send/:id",protectRoute,friendRequestSend);
 router.delete("/friends/cancel/:id", protectRoute, removeRequest); // Cancel sent request
-router.delete("/friends/remove/:id", protectRoute,friendRejected); // Reject/remove friend
+router.delete("/friends/remove/:id", protectRoute,friendRejected); // remove friend
 router.post("/friends/accept/:id",protectRoute,friendRequestAccept);
 router.get("/user/:id", protectRoute, getUserById);
- // New endpoint to get user by ID
+ // get user by id
 router.post("/:id/read",protectRoute, markMessagesAsRead);
 router.get("/:id", protectRoute, getMessagesBetweenUsers);
 

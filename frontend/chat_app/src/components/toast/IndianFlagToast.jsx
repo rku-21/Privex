@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import './IndianFlagToast.css';
-
 const IndianFlagToast = ({ t, message, type }) => {
   const [showText, setShowText] = useState(false);
   const [visibleChars, setVisibleChars] = useState(0);
   
   useEffect(() => {
-    // First show the flag animation
-    setTimeout(() => {
+   setTimeout(() => {
       setShowText(true);
     }, 300);
-    
-    // Then start revealing text character by character
     if (showText && message) {
       const interval = setInterval(() => {
         setVisibleChars(prev => {
@@ -22,7 +18,7 @@ const IndianFlagToast = ({ t, message, type }) => {
             return prev;
           }
         });
-      }, 30); // Speed of text reveal
+      }, 30); 
       
       return () => clearInterval(interval);
     }
@@ -30,7 +26,7 @@ const IndianFlagToast = ({ t, message, type }) => {
   
   const visibleText = message ? message.substring(0, visibleChars) : '';
   
-  // Icon based on toast type
+ 
   const getIcon = () => {
     switch (type) {
       case 'success':

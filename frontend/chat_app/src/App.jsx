@@ -55,7 +55,7 @@ const App = () => {
         position="top-center" 
         reverseOrder={false}
         toastOptions={{
-          // Default toast options
+        
           duration: 2000,
           style: {
             background: 'linear-gradient(135deg, #ffb870, #f8f8f8, #88c9a1)',
@@ -64,7 +64,7 @@ const App = () => {
             borderRadius: '8px',
             boxShadow: '0 3px 10px rgba(0, 0, 0, 0.1)',
           },
-          // Custom styles for each toast type
+         
           success: {
             style: {
               background: 'linear-gradient(135deg, #ffb870, #f8f8f8, #88c9a1)',

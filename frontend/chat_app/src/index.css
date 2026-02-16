@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Force dark mode globally */
+
 html {
   background: #111827;
   color-scheme: dark;
@@ -28,7 +28,7 @@ body {
   height: 100%;
 }
 
-/* Call notification animations */
+
 @keyframes slideDown {
   from {
     transform: translateY(-100%);
@@ -61,7 +61,7 @@ body {
   animation: ring-pulse 1.5s infinite;
 }
 
-/* Virtual Assistant Animations */
+
 @keyframes wave {
   0%, 100% {
     transform: rotate(0deg);

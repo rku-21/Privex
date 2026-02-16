@@ -1,19 +1,11 @@
-// Send OTP email using Brevo REST API
 export const sendOTPEmail = async (email, otp, fullname) => {
   try {
-    // 🔥 Validate environment variables
     if (!process.env.BREVO_API_KEY) {
-      console.error('❌ BREVO_API_KEY not configured in environment variables');
-      throw new Error('Email service not configured. Please add BREVO_API_KEY environment variable in Render dashboard.');
+     throw new Error("Email service is not configured");
     }
-
-    console.log(`📧 Attempting to send OTP to ${email}...`);
-    console.log(`🔑 Using Brevo API (key length: ${process.env.BREVO_API_KEY?.length})`);
-    
-    // Use Brevo REST API directly
     const emailData = {
       sender: { 
-        email: process.env.EMAIL_USER || 'privexapp21@gmail.com', // Use your verified email
+        email: process.env.EMAIL_USER, 
         name: 'Privex Chat' 
       },
       to: [{ email: email, name: fullname }],
@@ -67,8 +59,6 @@ export const sendOTPEmail = async (email, otp, fullname) => {
         </html>
       `
     };
-    
-    // Send email using fetch to Brevo API
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -83,34 +73,23 @@ export const sendOTPEmail = async (email, otp, fullname) => {
       const errorData = await response.json();
       throw new Error(`Brevo API error: ${errorData.message || response.statusText}`);
     }
-    
-    console.log(`✅ OTP email sent successfully to ${email} via Brevo`);
     return true;
   } catch (error) {
-    console.error('❌❌❌ EMAIL SENDING FAILED ❌❌❌');
-    console.error('Error:', error.message);
-    console.error('Recipient:', email);
-    
     if (error.message.includes('timeout')) {
-      throw new Error('Email service timeout. Please try again.');
+      throw new Error('Email service timeout Please try again');
     } else if (error.message.includes('Unauthorized')) {
-      throw new Error('Invalid Brevo API key. Please check BREVO_API_KEY in Render dashboard.');
+      throw new Error('Invalid Brevo API key');
     } else {
       throw new Error(`Failed to send verification email: ${error.message}`);
     }
   }
 };
-
-// Test Brevo email service
 export const testEmailService = async () => {
   try {
     if (!process.env.BREVO_API_KEY) {
-      console.error('❌ BREVO_API_KEY not configured');
+     
       return false;
     }
-    
-    console.log('📧 Testing Brevo email service...');
-    
     const response = await fetch('https://api.brevo.com/v3/account', {
       method: 'GET',
       headers: {
@@ -120,15 +99,10 @@ export const testEmailService = async () => {
     });
     
     if (!response.ok) {
-      throw new Error(`API test failed: ${response.statusText}`);
+      throw new Error(`Test failed: ${response.statusText}`);
     }
-    
-    console.log('✅ Brevo email service is ready');
     return true;
   } catch (error) {
-    console.error('❌ Brevo service test failed:', error.message);
-    console.error('❌ OTP emails WILL NOT WORK');
-    console.error('❌ Please check BREVO_API_KEY in Render dashboard');
-    return false;
+   return false;
   }
 };

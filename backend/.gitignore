@@ -18,3 +18,11 @@ Thumbs.db
 # Build output
 dist/
 build/
+
+# local scripts
+scripts/
+
+#local seeds
+seeds/
+#local dropindexs
+dropIndexes.js

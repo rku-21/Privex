@@ -1,12 +1,10 @@
 import React, { useEffect } from 'react';
-
-// This component wraps video elements and ensures they play properly
-const VideoPlayer = ({ 
-  videoRef, 
-  stream, 
-  muted = false, 
-  autoPlay = true, 
-  className = '', 
+const VideoPlayer = ({
+  videoRef,
+  stream,
+  muted = false,
+  autoPlay = true,
+  className = '',
   onClick = null,
   enableDebug = false
 }) => {
@@ -14,32 +12,30 @@ const VideoPlayer = ({
     const videoElement = videoRef.current;
     if (!videoElement || !stream) return;
 
-    // 🔥 CRITICAL: Only attach if srcObject is different
-    // This prevents flickering when tracks are added to the same stream
+
     if (videoElement.srcObject !== stream) {
-      // Log for debugging
+
       if (enableDebug) {
-        console.log(`VideoPlayer: attaching stream ${stream.id}`);
-        console.log(`VideoPlayer: stream has tracks:`, stream.getTracks().map(t => 
+         console.log(`VideoPlayer stream has tracks`, stream.getTracks().map(t =>
           `${t.kind}:${t.id} (${t.enabled ? 'enabled' : 'disabled'})`
         ));
       }
 
-      // Set stream to element
+
       videoElement.srcObject = stream;
-      
-      // Set muted property
+
+
       videoElement.muted = muted;
 
-      // Play the video
+
       const playVideo = async () => {
         try {
           await videoElement.play();
           if (enableDebug) {
-            console.log('VideoPlayer: video playing successfully');
+            console.log('video playing successfully');
           }
         } catch (err) {
-          console.warn('VideoPlayer: Failed to play video:', err.message);
+          console.warn('Failed to play video:', err.message);
         }
       };
 
@@ -47,21 +43,21 @@ const VideoPlayer = ({
         playVideo();
       }
     } else if (enableDebug) {
-      console.log('VideoPlayer: stream already attached, skipping re-attach');
+      console.log('stream already attached skipping re-attach');
     }
-    
-    // Force enable all video tracks (run every time to handle track changes)
+
+
     stream.getVideoTracks().forEach(track => {
       if (!track.enabled) {
         track.enabled = true;
         if (enableDebug) {
-          console.log(`VideoPlayer: forced video track ${track.id} enabled`);
+          console.log(`forced video track ${track.id} enabled`);
         }
       }
     });
 
     return () => {
-      // Cleanup when unmounted
+
       if (videoElement.srcObject) {
         videoElement.srcObject = null;
       }

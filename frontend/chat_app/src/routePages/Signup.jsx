@@ -14,7 +14,7 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({ fullname: '', email: '', password: '', confirmPassword: '' });
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState(1); // 1: signup form, 2: OTP verification
+  const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const { setAuthUser } = useAuthStore();
@@ -28,7 +28,7 @@ export default function Signup() {
       return window.toast?.error('Email is required');
     }
     if (!formData.password) return window.toast?.error('Password is required');
-    if (formData.password.length <6) return window.toast?.error('Password must be at least 6 characters');
+    if (formData.password.length < 6) return window.toast?.error('Password must be at least 6 characters');
     if (formData.password !== formData.confirmPassword) return window.toast?.error('Passwords do not match');
     return true;
   };
@@ -39,22 +39,22 @@ export default function Signup() {
     if (success !== true) return;
 
     setIsLoading(true);
-    
-    // Set a safety timeout to prevent infinite loading
+
+   
     const timeoutId = setTimeout(() => {
       setIsLoading(false);
-      window.toast?.error('Request timeout. Please check your internet connection and try again.');
-    }, 35000); // 35 seconds (slightly more than axios timeout)
-    
+      window.toast?.error('Request timeout');
+    }, 35000); 
+
     try {
       const { confirmPassword, ...signupData } = formData;
       const res = await axiosInstance.post('/auth/request-signup', signupData);
-      clearTimeout(timeoutId); // Clear timeout on success
+      clearTimeout(timeoutId); 
       window.toast?.success(res.data.message || 'OTP sent to your email!');
       setStep(2);
-      setResendTimer(60); // 60 seconds cooldown
-      
-      // Start countdown
+      setResendTimer(60); 
+
+     
       const interval = setInterval(() => {
         setResendTimer((prev) => {
           if (prev <= 1) {
@@ -65,20 +65,20 @@ export default function Signup() {
         });
       }, 1000);
     } catch (error) {
-      clearTimeout(timeoutId); // Clear timeout on error
-      console.error('OTP request error:', error);
+      clearTimeout(timeoutId); 
+      console.error('OTP request error', error);
+
       
-      // Handle different error types
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        window.toast?.error('Request timeout. Server is taking too long to respond. Please try again.');
+        window.toast?.error('Request timeout');
       } else if (error.response?.status === 500) {
-        window.toast?.error(error.response?.data?.message || 'Server error. Please contact support if this persists.');
+        window.toast?.error(error.response?.data?.message || 'response error');
       } else if (error.response?.status === 400) {
-        window.toast?.error(error.response?.data?.message || 'Invalid signup data. Please check your information.');
+        window.toast?.error(error.response?.data?.message || 'Invalid signup data');
       } else if (!error.response) {
-        window.toast?.error('Network error. Please check your internet connection.');
+        window.toast?.error('Network error');
       } else {
-        window.toast?.error(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+        window.toast?.error(error.response?.data?.message || 'Failed to send OTP');
       }
     } finally {
       setIsLoading(false);
@@ -88,7 +88,7 @@ export default function Signup() {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     if (!otp.trim() || otp.length !== 6) {
-      return window.toast?.error('Please enter valid 6-digit OTP');
+      return window.toast?.error('Please enter valid 6 digit OTP');
     }
 
     setIsLoading(true);
@@ -97,10 +97,10 @@ export default function Signup() {
         email: formData.email,
         otp: otp
       });
-      
-      // Set auth user and connect socket
+
+     
       setAuthUser(res.data);
-      
+
       window.toast?.success('Account created successfully!');
       navigate('/');
     } catch (error) {
@@ -112,21 +112,21 @@ export default function Signup() {
 
   const handleResendOTP = async () => {
     if (resendTimer > 0) return;
-    
+
     setIsLoading(true);
-    
-    // Safety timeout
+
+  
     const timeoutId = setTimeout(() => {
       setIsLoading(false);
-      window.toast?.error('Request timeout. Please try again.');
+      window.toast?.error('Request timeout Please try again');
     }, 35000);
-    
+
     try {
       const res = await axiosInstance.post('/auth/resend-otp', { email: formData.email });
       clearTimeout(timeoutId);
       window.toast?.success(res.data.message || 'New OTP sent!');
       setResendTimer(60);
-      
+
       const interval = setInterval(() => {
         setResendTimer((prev) => {
           if (prev <= 1) {
@@ -139,9 +139,9 @@ export default function Signup() {
     } catch (error) {
       clearTimeout(timeoutId);
       console.error('Resend OTP error:', error);
-      
+
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        window.toast?.error('Request timeout. Please check your connection and try again.');
+        window.toast?.error('Request timeout');
       } else {
         window.toast?.error(error.response?.data?.message || 'Failed to resend OTP');
       }
@@ -152,21 +152,19 @@ export default function Signup() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
+     
       <div
         className={`flex justify-between items-center p-4 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm fixed top-0 left-0 w-full z-50`}
       >
-        <h1 className={` text-2xl font-extrabold text-transparent bg-clip-text ${
-          
-          isDark 
-               ? 'bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500'
-              : 'bg-gradient-to-r from-green-500 via-blue-500 to-purple-600'
-        
-        
-        }`}> Privex</h1>
+        <h1 className={` text-2xl font-extrabold text-transparent bg-clip-text ${isDark
+            ? 'bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500'
+            : 'bg-gradient-to-r from-green-500 via-blue-500 to-purple-600'
+
+
+          }`}> Privex</h1>
       </div>
 
-      {/* Main */}
+      
       <div className="flex items-center justify-center min-h-screen">
         <div
           className={`w-full max-w-md rounded-2xl shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'} p-8 m-2`}
@@ -177,122 +175,115 @@ export default function Signup() {
             {step === 2 && (
               <button
                 onClick={() => setStep(1)}
-                className={`self-start mb-4 flex items-center gap-2 ${
-                  isDark ? 'text-blue-400 hover:text-blue-300' : 'text-green-600 hover:text-green-500'
-                }`}
+                className={`self-start mb-4 flex items-center gap-2 ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-green-600 hover:text-green-500'
+                  }`}
               >
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
             )}
             <h2
-              className={`text-2xl font-bold text-center bg-clip-text text-transparent ${
-                isDark
+              className={`text-2xl font-bold text-center bg-clip-text text-transparent ${isDark
                   ? 'bg-gradient-to-r from-purple-400 via-pink-500 to-red-500'
                   : 'bg-gradient-to-r from-green-600 to-blue-600'
-              }`}
+                }`}
             >
               {step === 1 ? 'Create Account' : 'Verify Email'}
             </h2>
             <p
-              className={`text-sm text-center mt-2 bg-clip-text text-transparent ${
-                isDark
+              className={`text-sm text-center mt-2 bg-clip-text text-transparent ${isDark
                   ? 'bg-gradient-to-r from-purple-400 via-pink-500 to-red-500'
                   : 'bg-gradient-to-r from-green-600 to-blue-600'
-              }`}
+                }`}
             >
               {step === 1 ? 'Join Privex and get started' : `Enter the 6-digit code sent to ${formData.email}`}
             </p>
           </div>
 
-          {/* Step 1: Signup Form */}
+        
           {step === 1 && (
-          <form onSubmit={handleRequestOTP} className="space-y-6">
-            {/* Name */}
-            <div>
-              <label
-                htmlFor="name"
-                className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-              >
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.fullname}
-                onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
-                className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 ${
-                  isDark
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
-                } focus:ring-2 focus:ring-opacity-50`}
-                placeholder="Enter your name"
-                required
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-              >
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 ${
-                  isDark
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
-                } focus:ring-2 focus:ring-opacity-50`}
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-              >
-                Password
-              </label>
-              <div className="relative">
+            <form onSubmit={handleRequestOTP} className="space-y-6">
+              {/* Name */}
+              <div>
+                <label
+                  htmlFor="name"
+                  className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                >
+                  Full Name
+                </label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className={`w-full px-4 py-3 pr-12 rounded-lg border transition-colors duration-200 ${
-                    isDark
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.fullname}
+                  onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 ${isDark
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
                       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
-                  } focus:ring-2 focus:ring-opacity-50`}
-                  placeholder="Enter your password"
+                    } focus:ring-2 focus:ring-opacity-50`}
+                  placeholder="Enter your name"
                   required
                 />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className={`absolute inset-y-0 right-0 pr-3 flex items-center ${
-                    isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
               </div>
-            </div>
 
-      
-            
-            {/* Confirm Password */}
+              {/* Email */}
+              <div>
+                <label
+                  htmlFor="email"
+                  className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                >
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 ${isDark
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
+                    } focus:ring-2 focus:ring-opacity-50`}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label
+                  htmlFor="password"
+                  className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className={`w-full px-4 py-3 pr-12 rounded-lg border transition-colors duration-200 ${isDark
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
+                      } focus:ring-2 focus:ring-opacity-50`}
+                    placeholder="Enter your password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className={`absolute inset-y-0 right-0 pr-3 flex items-center ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+
+
+              {/* Confirm Password */}
               <div>
                 <label
                   htmlFor="confirmPassword"
@@ -307,20 +298,18 @@ export default function Signup() {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className={`w-full px-4 py-3 pr-12 rounded-lg border transition-colors duration-200 ${
-                      isDark
+                    className={`w-full px-4 py-3 pr-12 rounded-lg border transition-colors duration-200 ${isDark
                         ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
-                    } focus:ring-2 focus:ring-opacity-50`}
+                      } focus:ring-2 focus:ring-opacity-50`}
                     placeholder="Re-enter your password"
                     required
                   />
                   <button
                     type="button"
                     onClick={toggleConfirmPasswordVisibility}
-                    className={`absolute inset-y-0 right-0 pr-3 flex items-center ${
-                      isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`absolute inset-y-0 right-0 pr-3 flex items-center ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                      }`}
                   >
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -328,107 +317,102 @@ export default function Signup() {
               </div>
 
 
-            
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] ${
-                isDark
-                  ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50'
-                  : 'bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-500 focus:ring-opacity-50'
-              } shadow-lg hover:shadow-xl flex justify-center items-center`}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Sending OTP...
-                </>
-              ) : (
-                'Continue'
-              )}
-            </button>
-          </form>
-          )}
 
-          {/* Step 2: OTP Verification */}
-          {step === 2 && (
-          <form onSubmit={handleVerifyOTP} className="space-y-6">
-            <div>
-              <label
-                htmlFor="otp"
-                className={`block text-sm font-medium mb-2 text-center ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-              >
-                Enter OTP
-              </label>
-              <input
-                type="text"
-                id="otp"
-                name="otp"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-center text-2xl tracking-widest font-bold ${
-                  isDark
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
-                } focus:ring-2 focus:ring-opacity-50`}
-                placeholder="000000"
-                maxLength={6}
-                required
-                autoFocus
-              />
-              <p className={`text-xs mt-2 text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                OTP valid for 10 minutes
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading || otp.length !== 6}
-              className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] ${
-                isDark
-                  ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-600'
-                  : 'bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 disabled:bg-gray-400'
-              } shadow-lg hover:shadow-xl flex justify-center items-center disabled:cursor-not-allowed`}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" /> Verifying...
-                </>
-              ) : (
-                'Verify & Create Account'
-              )}
-            </button>
-
-            {/* Resend OTP */}
-            <div className="text-center">
+              {/* Submit */}
               <button
-                type="button"
-                onClick={handleResendOTP}
-                disabled={resendTimer > 0 || isLoading}
-                className={`text-sm font-medium ${
-                  resendTimer > 0 || isLoading
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : isDark
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : 'text-green-600 hover:text-green-500'
-                } transition-colors`}
+                type="submit"
+                disabled={isLoading}
+                className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] ${isDark
+                    ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50'
+                    : 'bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-500 focus:ring-opacity-50'
+                  } shadow-lg hover:shadow-xl flex justify-center items-center`}
               >
-                {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" /> Sending OTP...
+                  </>
+                ) : (
+                  'Continue'
+                )}
               </button>
-            </div>
-          </form>
+            </form>
           )}
 
-          {/* Already have account */}
+         
+          {step === 2 && (
+            <form onSubmit={handleVerifyOTP} className="space-y-6">
+              <div>
+                <label
+                  htmlFor="otp"
+                  className={`block text-sm font-medium mb-2 text-center ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                >
+                  Enter OTP
+                </label>
+                <input
+                  type="text"
+                  id="otp"
+                  name="otp"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 text-center text-2xl tracking-widest font-bold ${isDark
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-green-500 focus:ring-green-500'
+                    } focus:ring-2 focus:ring-opacity-50`}
+                  placeholder="000000"
+                  maxLength={6}
+                  required
+                  autoFocus
+                />
+                <p className={`text-xs mt-2 text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  OTP valid for 10 minutes
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || otp.length !== 6}
+                className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] ${isDark
+                    ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 disabled:bg-gray-600'
+                    : 'bg-green-500 hover:bg-green-600 focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 disabled:bg-gray-400'
+                  } shadow-lg hover:shadow-xl flex justify-center items-center disabled:cursor-not-allowed`}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" /> Verifying...
+                  </>
+                ) : (
+                  'Verify & Create Account'
+                )}
+              </button>
+
+             
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={resendTimer > 0 || isLoading}
+                  className={`text-sm font-medium ${resendTimer > 0 || isLoading
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : isDark
+                        ? 'text-blue-400 hover:text-blue-300'
+                        : 'text-green-600 hover:text-green-500'
+                    } transition-colors`}
+                >
+                  {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+                </button>
+              </div>
+            </form>
+          )}
+
+        
           <div className="text-center mt-6">
             <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               Already have an account?{' '}
               <Link
                 to="/login"
-                className={`font-medium ${
-                  isDark ? 'text-blue-400 hover:text-blue-300' : 'text-green-600 hover:text-green-500'
-                } transition-colors`}
+                className={`font-medium ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-green-600 hover:text-green-500'
+                  } transition-colors`}
               >
                 Sign in
               </Link>

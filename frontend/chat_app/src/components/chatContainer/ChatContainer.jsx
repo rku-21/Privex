@@ -26,24 +26,23 @@ const ChatContainer = () => {
     setselectedUser,
   } = useChatStore();
   
-  // Subscribe to socket events once when component mounts
   useEffect(() => {
     if (!socket) return;
     SubscribeToMessages();
     return () => unsubscribeToMessages();
-  }, [socket]); // Only re-run if socket changes
+  }, [socket]); 
 
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Scroll to bottom when messages update
+ 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Fetch messages when selected user changes
+  
   useEffect(() => {
     const userId = typeof selectedUser === 'string' ? selectedUser : selectedUser?._id;
     if (!userId) return;
@@ -51,7 +50,7 @@ const ChatContainer = () => {
     console.log("Fetching messages for user:", userId);
     getMessages(userId);
   }, [selectedUser]);
-  // Mark messages as read when selectedUser changes
+  
   useEffect(() => {
     if (!selectedUser) return;
     const markMessagesAsRead = async () => {
@@ -68,31 +67,31 @@ const ChatContainer = () => {
     markMessagesAsRead();
   }, [selectedUser]);
 
-  // Get user ID regardless of whether selectedUser is object or string
+  
   const userId = typeof selectedUser === 'string' ? selectedUser : selectedUser?._id;
   
   const isOnline =
     (typeof selectedUser !== 'string' && selectedUser?.fullname === "Privex Bot") ||
     onlineUsers?.includes(userId);
 
-//  call handler function 
+
 const handleAudioCall = () => {
   console.log("handleAudioCall invoked");
   if (!selectedUser) return toast.error("Please select a user first.");
   if (!isOnline) return toast.error("User is offline.");
   
   toast.success("Starting audio call");
-  // You can implement your call logic here
+ 
    initiateCall(userId, "audio");
 };
 
-// video call handler function
+
 const handleVideoCall = () => {
   if (!selectedUser) return toast.error("Please select a user first.");
   if (!isOnline) return toast.error("User is offline.");
   
   toast.success("Starting video call");
-  // You can implement your call logic here
+  
   initiateCall(userId, "video");
 };
 
@@ -101,9 +100,7 @@ const handleVideoCall = () => {
     setselectedUser(null);
   };
 
-  // =====================
-  // MESSAGE HANDLERS
-  // =====================
+  
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file?.type.startsWith("image/")) {
@@ -141,9 +138,7 @@ const handleVideoCall = () => {
     }
   };
 
-  // =====================
-  // RENDER
-  // =====================
+ 
   if (isMessagesLoding) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -176,7 +171,7 @@ const handleVideoCall = () => {
         theme === "dark" ? "bg-gray-900" : "bg-white"
       }`}
     >
-      {/* HEADER - Fixed at top */}
+     
       <div
         className={`sticky top-0 z-40 backdrop-blur-xl border-b border-gray-200/50 p-4 shadow-sm ${
           theme === "dark" ? "bg-gray-800" : "bg-gray-100"
@@ -332,7 +327,7 @@ const handleVideoCall = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* INPUT - Fixed at bottom */}
+    
       <div
         className={`sticky bottom-0 backdrop-blur-xl border-t border-gray-200/50 p-4 ${
           theme === "dark" ? "bg-gray-800" : "bg-gray-100"
