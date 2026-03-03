@@ -37,7 +37,7 @@ export const Contact = () => {
       background: 'linear-gradient(135deg, #0f0c29, #24204e, #1b1b31)'
     } : {}}
     >
-      {/* Navbar */}
+      
       <div className="fixed top-0 left-0 right-0 z-50"
         style={theme === "dark" ? {
           background: 'rgba(26, 26, 46, 0.97)',
@@ -52,7 +52,7 @@ export const Contact = () => {
          
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Contact Info Cards */}
+           
             <div className="lg:col-span-1 space-y-6 mt-4">
               <div className={`rounded-2xl p-6 transition-all duration-300 ${
                 theme === "dark" 

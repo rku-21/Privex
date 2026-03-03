@@ -67,7 +67,7 @@ export const RequestReceived = () => {
     <div className="min-h-screen bg-black text-white">
       <Navbar />
 
-      {/* Requests List */}
+      
       <div className="max-w-2xl mx-auto px-4 pb-20">
         
         
@@ -87,7 +87,7 @@ export const RequestReceived = () => {
                 ref={index === friendRequests.received.length - 1 ? lastRequestRef : null}
                 className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-900/50 transition-colors"
               >
-                {/* Left */}
+               
                 <div className="flex items-center space-x-3">
                   <img
                     src={user.profilePicture || "avatar.png"}
@@ -102,7 +102,7 @@ export const RequestReceived = () => {
                   </div>
                 </div>
 
-                {/* Right - Buttons */}
+                
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleRemove(user._id)}
@@ -122,7 +122,7 @@ export const RequestReceived = () => {
           </div>
         )}
 
-        {/* Loading Indicator */}
+       
         {receivedRequestsPagination.isLoading && (
           <div className="text-center py-6">
             <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>

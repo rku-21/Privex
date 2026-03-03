@@ -52,8 +52,6 @@ const ActiveCallModal = () => {
   if (!isCallAccepted) return null;
 
   const calleeData = onCallWithWhom;
-  console.log("Callee data:", calleeData);
-
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -63,19 +61,17 @@ const ActiveCallModal = () => {
   };
 
   const handleCallEnd = () => {
-    console.log("Handle end/cancel call triggered from ActiveCallModal");
     const socket = useAuthStore.getState().socket;
     const callStore = useCallStore.getState();
 
     if (!socket) {
-      console.log("No socket available, cannot emit call-ended");
+      console.log("No socket available");
     }
 
     if (callStore.isCallAccepted && callStore.currentCallId) {
-      console.log("ending an active call and emitting call-ended with callId:", callStore.currentCallId);
       socket.emit("call-ended", { callId: callStore.currentCallId });
     } else {
-      console.log("Call was not in accepted state or no callId");
+      
     }
 
     
@@ -87,16 +83,10 @@ const ActiveCallModal = () => {
       
       {callType === "video" ? (
         <div className="relative w-full h-full flex items-center justify-center">
-          {/* Remote Video Fullscreen */}
+         
           <video
             ref={(videoElement) => {
               if (videoElement && remoteStream) {
-                console.log(
-                  "Setting remote stream to video element:",
-                  remoteStream.id,
-                  "Tracks:",
-                  remoteStream.getTracks().map(t => t.kind)
-                );
                 videoElement.srcObject = remoteStream;
                 videoElement.play().catch(err => console.error("Remote video play error:", err));
               }
@@ -107,7 +97,7 @@ const ActiveCallModal = () => {
             className="w-full h-full object-cover"
           />
 
-          {/* Mini Local Video */}
+         
           <div className="absolute top-6 right-6 w-36 h-52 sm:w-40 sm:h-56 rounded-2xl overflow-hidden shadow-2xl border border-white/20 z-20">
             <video
               ref={(videoElement) => {
@@ -116,11 +106,7 @@ const ActiveCallModal = () => {
                   localStream &&
                   videoElement.srcObject !== localStream
                 ) {
-                  console.log(
-                    "Setting local stream to video element:",
-                    localStream.id
-                  );
-                  videoElement.srcObject = localStream;
+                videoElement.srcObject = localStream;
                 }
               }}
               autoPlay
@@ -135,9 +121,9 @@ const ActiveCallModal = () => {
             )}
           </div>
 
-          {/* Control Buttons Overlay */}
+          
           <div className="absolute bottom-8 left-0 right-0 flex justify-center space-x-6 z-30">
-            {/* Mute */}
+           
             <button
               onClick={() => useCallStore.getState().toggleMute()}
               className={`p-5 rounded-full transition-all transform hover:scale-110 ${
@@ -153,7 +139,7 @@ const ActiveCallModal = () => {
               )}
             </button>
 
-            {/* End Call */}
+            
             <button
               onClick={handleCallEnd}
               className="p-6 bg-red-500 rounded-full hover:bg-red-600 transition-all transform hover:scale-110 shadow-lg"
@@ -161,7 +147,7 @@ const ActiveCallModal = () => {
               <PhoneOff className="w-7 h-7 text-white" />
             </button>
 
-            {/* Video Toggle */}
+            
             <button
               onClick={() => {
                 const newValue = !isVideoOff;
@@ -220,9 +206,9 @@ const ActiveCallModal = () => {
             {formatDuration(callDuration)}
           </p>
 
-          {/* Control Buttons */}
+          
           <div className="flex items-center justify-center space-x-6 mt-8">
-            {/* Mute */}
+           
             <button
               onClick={() => useCallStore.getState().toggleMute()}
               className={`p-5 rounded-full transition-all transform hover:scale-110 ${
@@ -238,7 +224,7 @@ const ActiveCallModal = () => {
               )}
             </button>
 
-            {/* End Call */}
+            
             <button
               onClick={handleCallEnd}
               className="p-6 bg-red-500 rounded-full hover:bg-red-600 transition-all transform hover:scale-110 shadow-lg"

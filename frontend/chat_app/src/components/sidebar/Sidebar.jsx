@@ -71,7 +71,7 @@ export const Sidebar = () => {
         ${selectedUser ? "sidebar-no-small-screen" : ""}
       `}
     >
-      {/* Search */}
+      
       <div className="p-3 bg-gray-900">
         <div className="bg-gray-800 rounded-lg flex items-center px-3 py-2">
           <Search size={16} className="text-gray-400 mr-3" />

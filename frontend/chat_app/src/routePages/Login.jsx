@@ -34,7 +34,7 @@ export default function Login() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
+      
       <div className={`flex justify-between items-center h-15 p-4 ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm fixed top-0 left-0 w-full z-50`}>
        <h1
         className={`text-2xl font-extrabold text-transparent bg-clip-text ${
@@ -47,13 +47,13 @@ export default function Login() {
       </h1>
       </div>
 
-      {/* Main */}
+      
       <div className="flex items-center justify-center min-h-screen">
         <div
           className={`w-full max-w-md rounded-2xl shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'} p-8 m-2`}
           style={{ marginTop: '4rem' }}
         >
-          {/* Heading */}
+          
           <div className="flex flex-col items-center mb-8">
             <h2
               className={`text-2xl font-bold text-center bg-clip-text text-transparent ${
@@ -75,7 +75,7 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Form */}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
        
             <div>
@@ -101,7 +101,7 @@ export default function Login() {
               />
             </div>
 
-            {/* Password */}
+            
             <div>
               <label
                 htmlFor="password"
@@ -136,7 +136,7 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Submit */}
+            
             <button
               type="submit"
               disabled={isLoginingUp}
@@ -156,7 +156,7 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Divider */}
+          
           <div className="flex items-center my-6">
             <div className={`flex-grow border-t ${isDark ? 'border-gray-600' : 'border-gray-300'}`} />
             <span className={`flex-shrink-0 px-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>or</span>
@@ -165,7 +165,7 @@ export default function Login() {
 
           
 
-          {/* Signup */}
+          
           <div className="text-center mt-6">
             <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               Don&apos;t have an account?{' '}

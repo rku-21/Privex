@@ -30,19 +30,13 @@ const IncomingCallNotification = () => {
 
   
   useEffect(() => {
-    console.log("⚠️⚠️⚠️ Setting up direct state listener in IncomingCallNotification");
+    
     
    
     const unsubscribe = useCallStore.subscribe(
       (state) => [state.isReceivingCall, state.incomingCall],
       ([newIsReceiving, newIncoming], [prevIsReceiving, prevIncoming]) => {
-        console.log("⚠️⚠️⚠️ CALL STORE STATE CHANGE DETECTED IN NOTIFICATION:", 
-          { prev: { isReceiving: prevIsReceiving, hasIncoming: !!prevIncoming }, 
-            new: { isReceiving: newIsReceiving, hasIncoming: !!newIncoming } });
-            
-       
-        if (prevIsReceiving !== newIsReceiving || !!prevIncoming !== !!newIncoming) {
-          console.log("⚠️⚠️⚠️ FORCING COMPONENT UPDATE");
+      if (prevIsReceiving !== newIsReceiving || !!prevIncoming !== !!newIncoming) {
           setRing(false); 
         }
       }
@@ -78,11 +72,10 @@ const IncomingCallNotification = () => {
   }, []);
 
   if (!isReceivingCall || !incomingCall) {
-    console.log("Not rendering");
     return null;
   }
   
-  console.log("Rendering incoming call");
+  
 
   const { from, callType } = incomingCall;
   const callerName = from?.fullname || 'Unknown';

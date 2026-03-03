@@ -170,7 +170,7 @@ export default function Signup() {
           className={`w-full max-w-md rounded-2xl shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'} p-8 m-2`}
           style={{ marginTop: '4rem' }}
         >
-          {/* Heading */}
+          
           <div className="flex flex-col items-center mb-8">
             {step === 2 && (
               <button
@@ -202,7 +202,7 @@ export default function Signup() {
         
           {step === 1 && (
             <form onSubmit={handleRequestOTP} className="space-y-6">
-              {/* Name */}
+              
               <div>
                 <label
                   htmlFor="name"
@@ -225,7 +225,7 @@ export default function Signup() {
                 />
               </div>
 
-              {/* Email */}
+              
               <div>
                 <label
                   htmlFor="email"
@@ -248,7 +248,7 @@ export default function Signup() {
                 />
               </div>
 
-              {/* Password */}
+              
               <div>
                 <label
                   htmlFor="password"
@@ -283,7 +283,7 @@ export default function Signup() {
 
 
 
-              {/* Confirm Password */}
+              
               <div>
                 <label
                   htmlFor="confirmPassword"
@@ -315,11 +315,6 @@ export default function Signup() {
                   </button>
                 </div>
               </div>
-
-
-
-
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={isLoading}

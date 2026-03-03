@@ -54,7 +54,7 @@ export default function ChatSettings() {
 
   return (
     <div className={`min-h-screen ${theme ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Header */}
+      
       <div className={`sticky top-0 z-10 ${theme ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b`}>
         <div className="flex items-center p-4">
 
@@ -67,7 +67,7 @@ export default function ChatSettings() {
         </div>
       </div>
 
-      {/* Profile Section */}
+      
       <div className={`${theme ? 'bg-gray-800' : 'bg-white'} border-b ${theme ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="flex items-center p-4">
           <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mr-4">
@@ -86,7 +86,7 @@ export default function ChatSettings() {
         </div>
       </div>
 
-      {/* Settings Sections */}
+      
       <div className="space-y-0">
         <SectionHeader title="Account" />
         <SettingsItem 
@@ -156,8 +156,6 @@ export default function ChatSettings() {
           onClick={() => console.log('Help clicked')}
         />
       </div>
-
-      {/* Footer */}
       <div className={`p-6 text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm`}>
         <div>ChatApp v2.24.1</div>
         <div className="mt-2">Made with <Heart className="w-4 h-4 inline text-red-500" /> by Your Team</div>
