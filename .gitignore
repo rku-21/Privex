@@ -5,6 +5,6 @@ frontend/chat_app/node_modules/
 frontend/chat_app/.env
 backend/node_modules/
 backend/.env
-frontend/chat_app/src/components/assistant/NoChatAssistant.jsx
-frontend/chat_app/src/components/assistant/NoFriendAssistant.jsx
-/frontend/chat_app/src/store/useCallStore_OLD_BACKUP.js
+frontend/chat_app/src/components/assistant/NoChatAssistant.jsx/
+frontend/chat_app/src/components/assistant/NoFriendAssistant.jsx/
+frontend/chat_app/src/store/useCallStore_OLD_BACKUP.js/
