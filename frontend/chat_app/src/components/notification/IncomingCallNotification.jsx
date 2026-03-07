@@ -16,13 +16,11 @@ const IncomingCallNotification = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("IncomingCallNotification state changed:", { isReceivingCall, incomingCall });
-    
     if (isReceivingCall && incomingCall) {
       console.log("Starting ring timer");
       const timer = setInterval(() => setRing(r => !r), 700);
       return () => {
-        console.log("Clearing ring timer");
+        
         clearInterval(timer);
       };
     }

@@ -16,9 +16,7 @@ const VideoPlayer = ({
     if (videoElement.srcObject !== stream) {
 
       if (enableDebug) {
-         console.log(`VideoPlayer stream has tracks`, stream.getTracks().map(t =>
-          `${t.kind}:${t.id} (${t.enabled ? 'enabled' : 'disabled'})`
-        ));
+       
       }
 
 
@@ -32,10 +30,10 @@ const VideoPlayer = ({
         try {
           await videoElement.play();
           if (enableDebug) {
-            console.log('video playing successfully');
+            
           }
         } catch (err) {
-          console.warn('Failed to play video:', err.message);
+          
         }
       };
 
@@ -43,7 +41,7 @@ const VideoPlayer = ({
         playVideo();
       }
     } else if (enableDebug) {
-      console.log('stream already attached skipping re-attach');
+      
     }
 
 
@@ -51,7 +49,7 @@ const VideoPlayer = ({
       if (!track.enabled) {
         track.enabled = true;
         if (enableDebug) {
-          console.log(`forced video track ${track.id} enabled`);
+          
         }
       }
     });
