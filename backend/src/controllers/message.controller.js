@@ -3,7 +3,7 @@ import Message from '../models/message.model.js';
 import Friendship from '../models/friendShip.model.js';
 import cloudinary from '../lib/cloudinary.js';
 import { getReceiverSocketId, io } from '../lib/socket.js';
-import { getUserSockets } from '../lib/redis.js';
+import { getUserSockets } from '../lib/redisPresence.js';
 import mongoose from 'mongoose';
 
 export const getAllUsers = async (req, res) => {
@@ -220,11 +220,19 @@ export const sendMessges = async (req, res) => {
     });
 
     await newMessage.save();
+    
+    const senderSocketIds= await getUserSockets(senderId);
+    if(senderSocketIds.length>0){
+      senderSocketIds.forEach(socketId =>{
+        io.to(socketId).emit("newMessage",newMessage);
+      })
+    };
 
     const receiverSocketIds = await getUserSockets(receiverId);
     if (receiverSocketIds.length > 0) {
       receiverSocketIds.forEach(socketId => {
         io.to(socketId).emit("newMessage", newMessage);
+        console.log("message is emited")
       });
     } else {
       console.log(` user is offline  message saved to DB`);

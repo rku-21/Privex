@@ -91,9 +91,7 @@ useEffect(() => {
             <div className="absolute">
               <div className="w-96 h-96 rounded-full bg-white/5 animate-ping"></div>
             </div>
-
-          
-            <div className="relative z-10 mb-8">
+             <div className="relative z-10 mb-8">
               <div className="w-48 h-48 rounded-full overflow-hidden ring-8 ring-white/10 shadow-2xl">
                 <img
                   src={calleeData.profilePicture || "avatar.png"}

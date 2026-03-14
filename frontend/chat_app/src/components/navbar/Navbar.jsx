@@ -82,16 +82,9 @@ export const Navbar = () => {
 >
   Privex
 </span>
-
-      </div>
-
-     
-      <div className="flex items-center gap-2">
-       
-      
-
-        
-        <div
+   </div>
+     <div className="flex items-center gap-2">
+       <div
           className="menu-toggle text-2xl cursor-pointer px-2 hover:text-pink-400"
           onClick={toggleMenu}
         >

@@ -16,9 +16,5 @@ router.get("/user/:id", protectRoute, getUserById);
  // get user by id
 router.post("/:id/read",protectRoute, markMessagesAsRead);
 router.get("/:id", protectRoute, getMessagesBetweenUsers);
-
-
-
-
 export default router;
 

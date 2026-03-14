@@ -6,7 +6,13 @@ import { useChatStore } from './useChatStore';
 import { useCallStore } from './useCallStore';
 
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
+const params = new URLSearchParams(window.location.search);
+const serverPort = params.get("server");
+
+const BASE_URL =
+  import.meta.env.MODE === "development"
+    ? `http://localhost:${serverPort || 5001}`
+    : "/";
 
 
 export const useAuthStore = create((set, get) => ({

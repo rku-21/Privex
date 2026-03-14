@@ -211,7 +211,7 @@ export const Contact = () => {
             </div>
           </div>
 
-          {/* FAQ Section */}
+          
           <div className={`mt-16 rounded-2xl p-8 ${
             theme === "dark" 
               ? "bg-white/5 backdrop-blur-lg border border-white/10" 
@@ -283,9 +283,7 @@ export const Contact = () => {
           </div>
         </div>
       </div>
-
-      {/* Bottom Navbar */}
-      <div className="fixed bottom-0 w-full z-40">
+     <div className="fixed bottom-0 w-full z-40">
         <BottomNavbar />
       </div>
     </div>

@@ -13,6 +13,7 @@
     "seed:test-users": "node src/seeds/populateTestData.js"
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
@@ -22,6 +23,7 @@
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.0",
+    "redis": "^5.11.0",
     "socket.io": "^4.8.1"
   },
   "author": "Rahul Upadhyay",

@@ -63,10 +63,7 @@ export const useChatStore=create((set,get)=>({
     
     searchUsers: async (query, reset = true) => {
         const currentState = get();
-        
-        console.log("searchUsers called:", { query, reset });
-        
-        if (!query || query.trim() === '') {
+         if (!query || query.trim() === '') {
            set({ 
                 searchResults: [], 
                 searchPagination: { nextCursor: null, hasMore: false, isLoading: false, query: '' }
@@ -99,7 +96,7 @@ export const useChatStore=create((set,get)=>({
                 },
             }));
         } catch (error) {
-           toast.error(error.response?.data?.message || "Failed to search users");
+           toast.error(error.response?.data?.message || "Failed the search the user");
             set({ searchPagination: { ...currentState.searchPagination, isLoading: false } });
         } finally {
             set({ isUsersLoding: false });
@@ -169,7 +166,7 @@ export const useChatStore=create((set,get)=>({
                 },
             }));
         } catch (error) {
-            toast.error("Error fetching pending requests");
+            toast.error("Error in feacthing the requests");
             set({ receivedRequestsPagination: { ...currentState.receivedRequestsPagination, isLoading: false } });
         }
     },
@@ -332,9 +329,8 @@ export const useChatStore=create((set,get)=>({
     socket.on("newMessage", (newMessage) => {
       const { selectedUser } = get();
       const currentUserId = useAuthStore.getState().authUser?._id;
-      console.log("New message received via socket:", newMessage);
-      
-      
+
+      if(!currentUserId) return;
       const [userId1, userId2] = newMessage.chatId.split('_');
       const isMessageForMe = userId1 === currentUserId || userId2 === currentUserId;
 

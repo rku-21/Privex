@@ -1,9 +1,18 @@
+import { redis,addUserSocket,removeUserSocket,getUserSockets,getOnlineUsers } from "./redisPresence.js";
+import "dotenv/config";
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
 import { randomUUID } from "crypto";
 import User from "../models/user.model.js";
-import { addUserSocket, removeUserSocket, getUserSockets, getOnlineUsers } from "./redis.js";
+import {createAdapter} from "@socket.io/redis-adapter"
+
+const pubClient=redis;
+const subClient=redis.duplicate();
+
+await subClient.connect();
+console.log("Redis connected");
+
 
 const app = express();
 const server = http.createServer(app);
@@ -15,6 +24,7 @@ const io = new Server(server, {
   pingTimeout: 60000,
   pingInterval: 25000,
 });
+io.adapter(createAdapter(pubClient,subClient));
 
 
 const activeCalls = new Map();
@@ -59,7 +69,7 @@ function cleanupCall(callId) {
 
 }
 io.on("connection", async (socket) => {
-  const userId = socket.handshake.query.userId;
+  const userId = socket.handshake.query?.userId;
 
   if (!userId || userId === "undefined" || userId === "null") {
     socket.disconnect(true);
@@ -284,17 +294,17 @@ socket.on("call-ended", async ({ callId }) => {
     console.log(`User disconnected: ${userId}, socketId: ${socket.id}`);
 
     try {
-       await removeUserSocket(socket.id);
-       const remainingSockets = await getUserSockets(userId);
+       await removeUserSocket(socket.userId,socket.id);
+       const remainingSockets = await getUserSockets(socket.userId);
        if (remainingSockets.length === 0) {
-        console.log(`User ${userId} is offline , all devices`);
+        console.log(`User ${socket.userId} is offline , all devices`);
 
         for (const [callId, call] of activeCalls.entries()) {
-          if (call.callerId === userId || call.receiverId === userId) {
+          if (call.callerId === socket.userId || call.receiverId === socket.userId) {
             console.log(`Auto-ending call ${callId} as `);
 
-            const otherUserId = call.callerId === userId ? call.receiverId : call.callerId;
-            await emitToUser(otherUserId, "peer-disconnected", { callId, userId });
+            const otherUserId = call.callerId === socket.userId ? call.receiverId : call.callerId;
+            await emitToUser(otherUserId, "peer-disconnected", { callId, userId:socket.userId});
 
             cleanupCall(callId);
           }

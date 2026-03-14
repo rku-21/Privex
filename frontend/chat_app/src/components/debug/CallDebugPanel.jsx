@@ -100,7 +100,7 @@ const CallDebugPanel = () => {
             bytesSent
           };
         } catch (error) {
-          console.log('Could not get WebRTC stats:', error);
+          console.log('Could not get WebRTC stats', error);
         }
       } else {
         newStats.connectionState = 'No connection';
@@ -239,8 +239,7 @@ const CallDebugPanel = () => {
           )}
           
           <div className="text-center text-gray-400 text-xs pt-1">
-            <p>If you're having issues, try refreshing or check your device permissions</p>
-          </div>
+           </div>
         </div>
       )}
     </div>

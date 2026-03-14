@@ -1,15 +1,12 @@
-import {app, server} from "./lib/socket.js";
+import "dotenv/config";
 import express from 'express';
-import dotenv from 'dotenv';
 import { connectDB } from './lib/db.js';
 import cookieParser from 'cookie-parser';
 import { protectRoute } from './middleware/auth.protectRoute.js';
 import cors from "cors";
 import path from "path";
-import { checkRedisHealth } from "./lib/redis.js";
-
-
-dotenv.config();
+// import { checkRedisHealth } from "./lib/redis.js";
+import {app, server} from "./lib/socket.js";
 const __dirname = path.resolve();
 const port = process.env.PORT || 5001;
 
@@ -29,7 +26,7 @@ app.use(
   cors({
     origin: process.env.NODE_ENV === "production" 
       ? true
-      : "http://localhost:5173",
+      : ["http://localhost:5173","http://localhost:5174"],
     credentials: true,
   })
 );
@@ -98,6 +95,7 @@ if (!process.env.BREVO_API_KEY) {
 }
 
 server.listen(port, '0.0.0.0', async () => {
+   console.log(`server is listening on ${port}`)
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     await testEmailService();
   }

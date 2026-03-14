@@ -175,24 +175,18 @@ const ActiveCallModal = () => {
           <audio
             ref={(audioElement) => {
               if (audioElement && remoteStream) {
-                console.log("Setting up audio stream...");
-                const audioTracks = remoteStream.getAudioTracks();
-                console.log("Audio tracks available:", audioTracks.length);
-                
+                 const audioTracks = remoteStream.getAudioTracks();
                 if (audioElement.srcObject !== remoteStream) {
-                  console.log("Setting remote stream to audio element");
                   audioElement.srcObject = remoteStream;
                   audioElement.volume = 1.0;
-                  audioElement.play().catch(err => console.error("Error playing audio:", err));
+                  audioElement.play().catch(err => console.error("Error playing audio", err));
                 }
               }
             }}
             autoPlay
             playsInline
           />
-
-         
-          <div className="w-48 h-48 rounded-full overflow-hidden ring-8 ring-white/10 shadow-2xl mb-4">
+         <div className="w-48 h-48 rounded-full overflow-hidden ring-8 ring-white/10 shadow-2xl mb-4">
             <img
              src={calleeData.profilePicture || "/avatar.png"}
 
