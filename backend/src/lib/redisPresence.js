@@ -9,7 +9,7 @@ redis.on("error",(err)=>{
 
 await redis.connect();
 
-export async function addUserSocket(userId,socketId){
+export const addUserSocket= async(userId,socketId)=>{
     await redis.sAdd(`user:${userId}:sockets`, socketId);
     await redis.sAdd("online_users", userId);
 }

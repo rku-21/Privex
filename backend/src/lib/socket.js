@@ -70,7 +70,7 @@ function cleanupCall(callId) {
 }
 io.on("connection", async (socket) => {
   const userId = socket.handshake.query?.userId;
-
+  console.log("user connected to the port ",process.env.PORT);
   if (!userId || userId === "undefined" || userId === "null") {
     socket.disconnect(true);
     return;
