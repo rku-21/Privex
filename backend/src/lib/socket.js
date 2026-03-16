@@ -26,7 +26,6 @@ const io = new Server(server, {
 });
 io.adapter(createAdapter(pubClient,subClient));
 
-
 const activeCalls = new Map();
 const callTimeouts = new Map();
 
@@ -43,16 +42,17 @@ const MAX_ICE_BUFFER_SIZE = 50;
 async function emitToUser(userId, event, payload) {
   try {
     const socketIds = await getUserSockets(userId);
+    // user is offline 
     if (socketIds.length === 0) {
-      console.log(` User ${userId} is offLine  cannot emit ${event}`);
       return false;
     }
+    // for each user emit the event
     socketIds.forEach(socketId => {
       io.to(socketId).emit(event, payload);
     });
     return true;
   } catch (error) {
-    console.error(`Error while emiting to user ${userId}:`, error);
+    console.error(`Some error occured ${error}`);
     return false;
   }
 }
@@ -68,6 +68,8 @@ function cleanupCall(callId) {
   activeCalls.delete(callId);
 
 }
+
+
 io.on("connection", async (socket) => {
   const userId = socket.handshake.query?.userId;
   console.log("user connected to the port ",process.env.PORT);
@@ -86,23 +88,15 @@ io.on("connection", async (socket) => {
 
   socket.on("call-user", async ({ to, offer, callType, from }) => {
     try {
-      console.log(`${from} calling ${to} (${callType})`);
-
-      if (!to || !offer || !from) {
-        console.error("Invalid call user payload");
+        if (!to || !offer || !from) {
+        console.error("Invalid call payload");
         return;
       }
-
-
       const caller = await User.findById(from).select("fullname profilePicture");
       if (!caller) {
-        console.error(`Caller ${from} not found in database`);
-        socket.emit("call-error", { message: "Caller not found" });
+         socket.emit("call-error", { message: "Caller not found" });
         return;
       }
-
-      
-
       //create unique call session id 
       const callId = randomUUID();
 
@@ -120,16 +114,12 @@ io.on("connection", async (socket) => {
       const timeout = setTimeout(async () => {
         const call = activeCalls.get(callId);
         if (call && call.status === "ringing") {
-          console.log(`Call ${callId} timed out`);
-
           await emitToUser(call.callerId, "call-timeout", { callId });
           await emitToUser(call.receiverId, "call-timeout", { callId });
-
-          cleanupCall(callId);
+           cleanupCall(callId);
         }
       }, CALL_TIMEOUT_MS);
-
-      callTimeouts.set(callId, timeout);
+      callTimeouts.set(callId, timeout);  // (callid ,timerid)
 
 
       const sent = await emitToUser(to, "incoming-call", {
@@ -142,32 +132,26 @@ io.on("connection", async (socket) => {
         callType,
         offer,
       });
-
+      // receiver is offline 
       if (!sent) {
-        console.log(` Receiver ${to} is offline`);
-        socket.emit("call-error", { message: "User is offline" });
+      socket.emit("call-error", { message: "User is offline" });
         cleanupCall(callId);
       } else {
-
         socket.emit("call-initiated", { callId });
-        
       }
     } catch (error) {
-      console.error(" Error in call-user:", error);
       socket.emit("call-error", { message: "Failed to initiate call" });
     }
   });
 
+  // listen when user answer the call 
   socket.on("answer-call", async ({ callId, answer }) => {
     try {
-      console.log(`Answer  Call ${callId} answered`);
-
       const call = activeCalls.get(callId);
       if (!call) {
         socket.emit("call-error", { message: "Call not found" });
         return;
       }
-
       if (call.status !== "ringing") {
              return;
       }

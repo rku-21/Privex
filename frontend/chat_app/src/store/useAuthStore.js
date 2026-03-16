@@ -110,13 +110,13 @@ export const useAuthStore = create((set, get) => ({
 
   connectSocket: () => {
     const { authUser, socket } = get();
+
+    // not authenticated user 
     if (!authUser || !authUser._id) {
-
-      return;
+       return;
     }
-
+    // check wheater the socket is connected or not its return true or false
     if (socket?.connected) {
-
       return;
     }
 
@@ -128,37 +128,35 @@ export const useAuthStore = create((set, get) => ({
       transports: ['websocket'],
       withCredentials: true,
       secure: true,
-
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 20000
     });
 
-
+    // connect is a built-in event from Socket.IO that fires when the client successfully connects to the server.
     newSocket.on("connect", () => {
       console.log(`Socket connected with ID: ${newSocket.id}`);
 
     });
-
+    // also a client side event fired when the connection is failed
     newSocket.on("connect_error", (error) => {
-
-      toast.error("Chat server connection error");
+        toast.error("Chat server connection error");
     });
 
-
+    // clean up the old socket of the user 
     if (socket) {
-
       socket.removeAllListeners();
       socket.disconnect();
     }
-
-
+     // set with new socket 
     set({ socket: newSocket });
-
+    
+    // always listen for the online users and update it 
     newSocket.on("getOnlineUsers", (userIds) => {
-
-      set({ onlineUsers: userIds });
+        set({ onlineUsers: userIds });
     });
+    
+    
     newSocket.on("call-rejected", () => {
       toast.error("Your call was rejected");
       useCallStore.getState().endCall();
