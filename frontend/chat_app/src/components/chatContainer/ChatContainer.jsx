@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, use } from "react";
 import { Send, Phone, Video, Paperclip, X } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
+import { useQueryPagination } from "../../store/useQueryPagination";
 import { useAuthStore } from "../../store/useAuthStore";
 import { formatMessageTime } from "../../lib/utlis";
 import { useThemeStore } from "../../store/useThemeStore";
@@ -8,23 +9,18 @@ import toast from "react-hot-toast";
 import MessageSkeleton from "../../Skeleton/MessagesSkelton";
 import { useCallStore } from "../../store/useCallStore";
 import { axiosInstance } from "../../lib/axios";
-
-
-
 const ChatContainer = () => {
   const { authUser, onlineUsers, socket } = useAuthStore();
   const {initiateCall} = useCallStore();
   const { theme } = useThemeStore();
   const {
-    messages,
-    getMessages,
-    isMessagesLoding,
     selectedUser,
     sendMessages,
     SubscribeToMessages,
     unsubscribeToMessages,
     setselectedUser,
   } = useChatStore();
+  const { messages, getMessages, isMessagesLoding } = useQueryPagination();
   
   useEffect(() => {
     if (!socket) return;

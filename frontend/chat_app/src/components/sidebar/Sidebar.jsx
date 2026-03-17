@@ -1,22 +1,29 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Search, MoreVertical, Loader2 } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore.js";
+import { useQueryPagination } from "../../store/useQueryPagination.js";
 import { useAuthStore } from "../../store/useAuthStore";
 import { SidebarSkeleton } from "../../Skeleton/SidebarSkeleton.jsx";
+import { use } from "react";
 
 export const Sidebar = () => {
 
   const { onlineUsers, authUser } = useAuthStore();
   const {
-    getFriends,
-    friends,
     selectedUser,
     setselectedUser,
-    isUsersLoding,
     unreadCounts,
-    friendsPagination,
-    loadMoreFriends
-  } = useChatStore();
+    } = useChatStore();
+
+  const {
+     getFriends,
+     friends,
+     isUsersLoding,
+     friendsPagination,
+     loadMoreFriends,
+    }=useQueryPagination();
+  
+
 
   const [searchTerm, setSearchTerm] = useState("");
   const scrollContainerRef = useRef(null);

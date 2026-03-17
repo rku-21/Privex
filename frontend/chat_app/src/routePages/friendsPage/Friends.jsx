@@ -2,11 +2,13 @@ import React, { useEffect, useCallback, useRef } from 'react';
 import BottomNavbar from '../../components/bottomNav/BottomNavbar';
 import { Navbar } from '../../components/navbar/Navbar';
 import { useChatStore } from '../../store/useChatStore';
+import { useQueryPagination } from '../../store/useQueryPagination';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
 export const Friends = () => {
-  const { getFriends, friends, removeFriend, friendsPagination, loadMoreFriends } = useChatStore();
+  const { removeFriend } = useChatStore();
+  const { getFriends, friends, friendsPagination, loadMoreFriends } = useQueryPagination();
   const navigate = useNavigate();
   const observerRef = useRef();
   

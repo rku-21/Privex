@@ -4,20 +4,20 @@ import BottomNavbar from "../../components/bottomNav/BottomNavbar";
 
 import { Navbar } from "../../components/navbar/Navbar";
 import { useChatStore } from "../../store/useChatStore";
+import { useQueryPagination } from "../../store/useQueryPagination";
 import toast from "react-hot-toast";
 
 export const RequestReceived = () => {
   
+  const { AcceptsTheRequests, removingFriendRequest } = useChatStore();
   const {
     getPendingRequests,
     friendRequests,
-    AcceptsTheRequests,
     getFriends,
     getsendedRequests,
-    removingFriendRequest,
     receivedRequestsPagination,
     loadMoreReceivedRequests,
-  } = useChatStore();
+  } = useQueryPagination();
 
   const observerRef = useRef();
 

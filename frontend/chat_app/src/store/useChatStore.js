@@ -2,8 +2,16 @@ import {create} from "zustand"
 import toast from "react-hot-toast"
 import { axiosInstance } from "../lib/axios"
 import {useAuthStore} from "./useAuthStore"
+import { useQueryPagination } from "./useQueryPagination"
 import { io } from "socket.io-client"
 import { use } from "react"
+
+const appendUniqueMessage = (messages, newMessage) => {
+  if (messages.some((message) => message._id === newMessage._id)) {
+    return messages;
+  }
+  return [...messages, newMessage];
+};
 export const useChatStore=create((set,get)=>({
     messages:[],
     friends:[],
@@ -59,191 +67,6 @@ export const useChatStore=create((set,get)=>({
         set({isUsersLoding:false});
       }
     },
-    
-    
-    searchUsers: async (query, reset = true) => {
-        const currentState = get();
-         if (!query || query.trim() === '') {
-           set({ 
-                searchResults: [], 
-                searchPagination: { nextCursor: null, hasMore: false, isLoading: false, query: '' }
-            });
-            return;
-        }
-        
-        if (currentState.searchPagination.isLoading) return;
-        
-        set({ 
-            isUsersLoding: reset,
-            searchPagination: { ...currentState.searchPagination, isLoading: true, query }
-        });
-        
-        try {
-            const cursor = reset ? null : currentState.searchPagination.nextCursor;
-            const params = new URLSearchParams({
-                query,
-                limit: '20'
-            });
-            if (cursor) params.append('cursor', cursor);
-            const res = await axiosInstance.get(`/messages/search?${params}`);
-            set(state => ({
-                searchResults: reset ? res.data.users : [...state.searchResults, ...res.data.users],
-                searchPagination: {
-                    nextCursor: res.data.nextCursor,
-                    hasMore: res.data.hasMore,
-                    isLoading: false,
-                    query,
-                },
-            }));
-        } catch (error) {
-           toast.error(error.response?.data?.message || "Failed the search the user");
-            set({ searchPagination: { ...currentState.searchPagination, isLoading: false } });
-        } finally {
-            set({ isUsersLoding: false });
-        }
-    },
-    
-    loadMoreSearchResults: async () => {
-        const { searchPagination } = get();
-        if (searchPagination.query) {
-            await get().searchUsers(searchPagination.query, false);
-        }
-    },
-    getFriends: async (reset = true) => {
-        const currentState = get();
-        if (currentState.friendsPagination.isLoading) return;
-        
-        set({ 
-            isUsersLoding: reset,
-            friendsPagination: { ...currentState.friendsPagination, isLoading: true }
-        });
-        
-        try {
-            const cursor = reset ? null : currentState.friendsPagination.nextCursor;
-            const params = cursor ? `?cursor=${cursor}&limit=20` : '?limit=20';
-            const res = await axiosInstance.get(`/messages/friends${params}`);
-            
-            set(state => ({
-                friends: reset ? res.data.friends : [...state.friends, ...res.data.friends],
-                friendsPagination: {
-                    nextCursor: res.data.nextCursor,
-                    hasMore: res.data.hasMore,
-                    isLoading: false,
-                },
-            }));
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to fetch friends");
-            set({ friendsPagination: { ...currentState.friendsPagination, isLoading: false } });
-        } finally {
-            set({ isUsersLoding: false });
-        }
-    },
-    
-    loadMoreFriends: async () => {
-        await get().getFriends(false);
-    },
-
-   getPendingRequests: async (reset = true) => {
-        const currentState = get();
-        if (currentState.receivedRequestsPagination.isLoading) return;
-        
-        set({ receivedRequestsPagination: { ...currentState.receivedRequestsPagination, isLoading: true } });
-        
-        try {
-            const cursor = reset ? null : currentState.receivedRequestsPagination.nextCursor;
-            const params = cursor ? `?cursor=${cursor}&limit=20` : '?limit=20';
-            const res = await axiosInstance.get(`/messages/friends-requests${params}`);
-            
-            set(state => ({
-                friendRequests: {
-                    ...state.friendRequests,
-                    received: reset ? res.data.requests : [...state.friendRequests.received, ...res.data.requests],
-                },
-                receivedRequestsPagination: {
-                    nextCursor: res.data.nextCursor,
-                    hasMore: res.data.hasMore,
-                    isLoading: false,
-                },
-            }));
-        } catch (error) {
-            toast.error("Error in feacthing the requests");
-            set({ receivedRequestsPagination: { ...currentState.receivedRequestsPagination, isLoading: false } });
-        }
-    },
-    
-    loadMoreReceivedRequests: async () => {
-        await get().getPendingRequests(false);
-    },
-  getsendedRequests: async (reset = true) => {
-        const currentState = get();
-        if (currentState.sentRequestsPagination.isLoading) return;
-        
-        set({ sentRequestsPagination: { ...currentState.sentRequestsPagination, isLoading: true } });
-        
-        try {
-            const cursor = reset ? null : currentState.sentRequestsPagination.nextCursor;
-            const params = cursor ? `?cursor=${cursor}&limit=20` : '?limit=20';
-            const res = await axiosInstance.get(`/messages/friends-send${params}`);
-            
-            set(state => ({
-                friendRequests: {
-                    ...state.friendRequests,
-                    sent: reset ? res.data.requests : [...state.friendRequests.sent, ...res.data.requests],
-                },
-                sentRequestsPagination: {
-                    nextCursor: res.data.nextCursor,
-                    hasMore: res.data.hasMore,
-                    isLoading: false,
-                },
-            }));
-        } catch (error) {
-            toast.error(error.message);
-            set({ sentRequestsPagination: { ...currentState.sentRequestsPagination, isLoading: false } });
-        }
-    },
-    
-    loadMoreSentRequests: async () => {
-        await get().getsendedRequests(false);
-    },
-
-
-
-
-    getMessages: async (userId, reset = true) => {
-        const currentState = get();
-        if (currentState.messagesPagination.isLoading) return;
-        
-        set({ 
-            isMessagesLoding: reset,
-            messagesPagination: { ...currentState.messagesPagination, isLoading: true }
-        });
-        
-        try {
-            const cursor = reset ? null : currentState.messagesPagination.nextCursor;
-            const params = cursor ? `?cursor=${cursor}&limit=50` : '?limit=50';
-            const res = await axiosInstance.get(`/messages/${userId}${params}`);
-            
-            set(state => ({
-                messages: reset ? res.data.messages : [...res.data.messages, ...state.messages],
-                messagesPagination: {
-                    nextCursor: res.data.nextCursor,
-                    hasMore: res.data.hasMore,
-                    isLoading: false,
-                },
-            }));
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to fetch messages");
-            set({ messagesPagination: { ...currentState.messagesPagination, isLoading: false } });
-        } finally {
-            set({ isMessagesLoding: false });
-        }
-    },
-    
-    loadMoreMessages: async () => {
-        const { selectedUser } = get();
-        if (!selectedUser) return;
-        await get().getMessages(selectedUser._id, false);
-    },
     SendingFriendRequest:async(Id)=>{
       try {
       const res=await axiosInstance.post(`/messages/friends/send/${Id}`);
@@ -290,6 +113,7 @@ export const useChatStore=create((set,get)=>({
 
    sendMessages: async (messageData) => {
     const { selectedUser, messages } = get();
+    const socket=useAuthStore.getState().socket;
     
         const  tempId=Date.now().toString();
         const tempMessage={
@@ -302,10 +126,22 @@ export const useChatStore=create((set,get)=>({
           createdAt: new Date().toISOString(),
         };
         set({messages:[...messages,tempMessage]});
+        useQueryPagination.setState((state) => ({
+          messages: [...state.messages, tempMessage],
+        }));
         
     try {
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
-      set({ messages: [...messages, res.data] });
+      set((state) => ({
+        messages: state.messages.map((message) =>
+          message._id === tempId ? res.data : message
+        ),
+      }));
+      useQueryPagination.setState((state) => ({
+        messages: state.messages.map((message) =>
+          message._id === tempId ? res.data : message
+        ),
+      }));
     }
     catch(error){
       toast.error(error?.response?.data?.message );
@@ -315,6 +151,11 @@ export const useChatStore=create((set,get)=>({
           msg._id === tempId ? { ...msg, status: 'failed' } : msg
         ),
       });
+      useQueryPagination.setState((state) => ({
+        messages: state.messages.map((message) =>
+          message._id === tempId ? { ...message, status: "failed" } : message
+        ),
+      }));
     } 
   },
   SubscribeToMessages: () => {
@@ -322,8 +163,6 @@ export const useChatStore=create((set,get)=>({
     if (!socket) {
         return;
     }
-
-    
     socket.off("newMessage");
 
     socket.on("newMessage", (newMessage) => {
@@ -344,7 +183,10 @@ export const useChatStore=create((set,get)=>({
 
       if (selectedUser && messageSenderId === selectedUser._id) {
         set((state) => ({
-          messages: [...state.messages, newMessage],
+          messages: appendUniqueMessage(state.messages, newMessage),
+        }));
+        useQueryPagination.setState((state) => ({
+          messages: appendUniqueMessage(state.messages, newMessage),
         }));
         
         axiosInstance.post(`/messages/${messageSenderId}/read`)
@@ -363,7 +205,10 @@ export const useChatStore=create((set,get)=>({
       else if (isFromMe && selectedUser) {
       
         set((state) => ({
-          messages: [...state.messages, newMessage],
+          messages: appendUniqueMessage(state.messages, newMessage),
+        }));
+        useQueryPagination.setState((state) => ({
+          messages: appendUniqueMessage(state.messages, newMessage),
         }));
       }
     });
@@ -400,4 +245,4 @@ export const useChatStore=create((set,get)=>({
     },
 
 
-}))
+}));

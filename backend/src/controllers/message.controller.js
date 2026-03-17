@@ -217,22 +217,33 @@ export const sendMessges = async (req, res) => {
       text,
       image: fileType === "image" ? fileUrl : null,
       video: fileType === "video" ? fileUrl : null,
+      status:"sent",
     });
 
     await newMessage.save();
     
     const senderSocketIds= await getUserSockets(senderId);
-    if(senderSocketIds.length>0){
-      senderSocketIds.forEach(socketId =>{
-        io.to(socketId).emit("newMessage",newMessage);
-      })
-    };
+    // if(senderSocketIds.length>0){
+    //   senderSocketIds.forEach(socketId =>{
+    //     io.to(socketId).emit("newMessage",newMessage);
+    //   })
+    // };   //think of this is this really needed 
 
     const receiverSocketIds = await getUserSockets(receiverId);
     if (receiverSocketIds.length > 0) {
       receiverSocketIds.forEach(socketId => {
         io.to(socketId).emit("newMessage", newMessage);
         console.log("message is emited")
+
+        // now send the Ack to the sender-side 
+        // if(senderSocketIds.length>0){
+        //   senderSocketIds.forEach(socketId=>{
+        //     io.to(socketId).emit("message-sent", newMessage)
+        //   })
+        // }
+
+
+
       });
     } else {
       console.log(` user is offline  message saved to DB`);

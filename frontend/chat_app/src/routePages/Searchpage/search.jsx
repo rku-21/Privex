@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { X, SearchIcon, Loader2 } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
+import { useQueryPagination } from "../../store/useQueryPagination";
 import { useAuthStore } from "../../store/useAuthStore";
 import BottomNavbar from "../../components/bottomNav/BottomNavbar";
 import { Loding } from "../../Skeleton/loding";
@@ -9,15 +10,14 @@ import toast from "react-hot-toast";
 const Search = () => {
   const { authUser } = useAuthStore();
 
+  const { SendingFriendRequest, removingFriendRequest } = useChatStore();
   const {
     searchUsers,
     searchResults,
     searchPagination,
     loadMoreSearchResults,
     isUsersLoding,
-    SendingFriendRequest,
-    removingFriendRequest,
-  } = useChatStore();
+  } = useQueryPagination();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [userStatus, setUserStatus] = useState({});

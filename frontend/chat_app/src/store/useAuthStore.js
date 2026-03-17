@@ -137,7 +137,10 @@ export const useAuthStore = create((set, get) => ({
     newSocket.on("connect", () => {
       console.log(`Socket connected with ID: ${newSocket.id}`);
 
+      newSocket.emit("user-online",authUser._id);
     });
+
+    
     // also a client side event fired when the connection is failed
     newSocket.on("connect_error", (error) => {
         toast.error("Chat server connection error");
