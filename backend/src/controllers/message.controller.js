@@ -6,6 +6,8 @@ import { getReceiverSocketId, io } from '../lib/socket.js';
 import { getUserSockets } from '../lib/redisPresence.js';
 import mongoose from 'mongoose';
 
+
+// function to return the all user at once except the authUser itself (very bad when large user)
 export const getAllUsers = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -16,6 +18,10 @@ export const getAllUsers = async (req, res) => {
     return res.status(500).json({ message: "Internal server error", error });
   }
 }
+
+
+
+// search pagination 
 export const searchUsers = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -26,7 +32,8 @@ export const searchUsers = async (req, res) => {
     const searchQuery = {
       _id: { $ne: userId },
       $or: [
-        { fullname: { $regex: query, $options: 'i' } },
+        // search the user whose fullname contain query or email contain query 'i' make its case insensitive
+        { fullname: { $regex: query, $options: 'i' } }, 
         { email: { $regex: query, $options: 'i' } }
       ]
     };
@@ -77,6 +84,7 @@ export const searchUsers = async (req, res) => {
   }
 }
 
+
 // get user for the call interface 
 export const getUserById = async (req, res) => {
   try {
@@ -92,6 +100,9 @@ export const getUserById = async (req, res) => {
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 }
+
+
+
 export const getAllfriends = async (req, res) => {
   try {
     const { cursor, limit = 20 } = req.query;
@@ -221,29 +232,29 @@ export const sendMessges = async (req, res) => {
     });
 
     await newMessage.save();
-    
-    const senderSocketIds= await getUserSockets(senderId);
-    // if(senderSocketIds.length>0){
-    //   senderSocketIds.forEach(socketId =>{
-    //     io.to(socketId).emit("newMessage",newMessage);
-    //   })
-    // };   //think of this is this really needed 
+
+    // socket id of the tab/device that initiated this HTTP request
+    const senderSocketIdHeader = req.headers["x-socket-id"];
+    const activeSenderSocketId = Array.isArray(senderSocketIdHeader)
+      ? senderSocketIdHeader[0]
+      : senderSocketIdHeader;
+
+    // Broadcast to sender's other tabs/devices so same-account sessions stay in sync.
+    const senderSocketIds = await getUserSockets(senderId);
+    const otherSenderSocketIds = activeSenderSocketId
+      ? senderSocketIds.filter((socketId) => socketId !== activeSenderSocketId)
+      : senderSocketIds;
+
+    if (otherSenderSocketIds.length > 0) {
+      otherSenderSocketIds.forEach((socketId) => {
+        io.to(socketId).emit("newMessage", newMessage);
+      });
+    }
 
     const receiverSocketIds = await getUserSockets(receiverId);
     if (receiverSocketIds.length > 0) {
-      receiverSocketIds.forEach(socketId => {
+      receiverSocketIds.forEach((socketId) => {
         io.to(socketId).emit("newMessage", newMessage);
-        console.log("message is emited")
-
-        // now send the Ack to the sender-side 
-        // if(senderSocketIds.length>0){
-        //   senderSocketIds.forEach(socketId=>{
-        //     io.to(socketId).emit("message-sent", newMessage)
-        //   })
-        // }
-
-
-
       });
     } else {
       console.log(` user is offline  message saved to DB`);
