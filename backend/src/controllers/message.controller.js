@@ -442,7 +442,7 @@ export const getAllrequests = async (req, res) => {
   }
 };
 
-// Get all sended Requests 
+// Get all sended Requests      
 export const getAllsendRequest = async (req, res) => {
   try {
     const userId = req.user._id;

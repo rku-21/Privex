@@ -17,6 +17,7 @@ export const useChatStore=create((set,get)=>({
       received: [],
     },
     unreadCounts: {},  
+    ackedMessageIds: {},
     selectedUser:null,
     isUsersLoding:false,
     isMessagesLoding:false,
@@ -112,11 +113,22 @@ export const useChatStore=create((set,get)=>({
           headers: socket?.id ? { "x-socket-id": socket.id } : undefined,
         }
       );
+      const ackId = String(res.data?._id || "");
+      const isAlreadyAcked = !!get().ackedMessageIds[ackId];
       useQueryPagination.setState((state) => ({
         messages: state.messages.map((message) =>
-          message._id === tempId ? { ...res.data, status: "sending" } : message
+          message._id === tempId
+            ? { ...res.data, status: isAlreadyAcked ? "sent" : "sending" }
+            : message
         ),
       }));
+      if (isAlreadyAcked) {
+        set((state) => {
+          const nextAcked = { ...state.ackedMessageIds };
+          delete nextAcked[ackId];
+          return { ackedMessageIds: nextAcked };
+        });
+      }
     }
     catch(error){
       toast.error(error?.response?.data?.message );
@@ -182,9 +194,16 @@ export const useChatStore=create((set,get)=>({
     // listen for this message Ack and mark message as delivered-to-server (single tick)
     socket.on("message-sent-Ack",(message)=>{
       if (!message?._id) return;
+      const ackId = String(message._id);
+      set((state) => ({
+        ackedMessageIds: {
+          ...state.ackedMessageIds,
+          [ackId]: true,
+        },
+      }));
       useQueryPagination.setState((state) => ({
         messages: state.messages.map((msg) =>
-          msg._id === message._id ? { ...msg, status: "sent" } : msg
+          String(msg._id) === ackId ? { ...msg, status: "sent" } : msg
         ),
       }));
     })

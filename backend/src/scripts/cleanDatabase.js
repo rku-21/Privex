@@ -45,15 +45,15 @@ const cleanDatabase = async () => {
     console.log('✅ All messages deleted');
 
     console.log('🗑️  Deleting friendships...');
-    await Friendship.deleteMany({});
+    // await Friendship.deleteMany({});
     console.log('✅ All friendships deleted');
 
     console.log('🗑️  Deleting pending signups...');
-    await PendingSignup.deleteMany({});
+    // await PendingSignup.deleteMany({});
     console.log('✅ All pending signups deleted');
 
     console.log('🗑️  Deleting users...');
-    await User.deleteMany({});
+    // await User.deleteMany({});
     console.log('✅ All users deleted\n');
 
     // Drop collections to ensure clean schema
