@@ -10,11 +10,8 @@ const useSocket = (user) => {
     if (!socket) {
       connectSocket();
     }
-    
-    
-  }, [user, socket, connectSocket]);
+    }, [user, socket, connectSocket]);
   
   return socket;
 };
-
 export default useSocket;

@@ -251,11 +251,19 @@ export const sendMessges = async (req, res) => {
       });
     }
 
+    // Always ack sender devices after DB save, even if receiver is offline.
+    if (senderSocketIds.length > 0) {
+      senderSocketIds.forEach((socketId) => {
+        io.to(socketId).emit("message-sent-Ack", newMessage);
+      });
+    }
+
     const receiverSocketIds = await getUserSockets(receiverId);
     if (receiverSocketIds.length > 0) {
       receiverSocketIds.forEach((socketId) => {
         io.to(socketId).emit("newMessage", newMessage);
       });
+
     } else {
       console.log(` user is offline  message saved to DB`);
     }

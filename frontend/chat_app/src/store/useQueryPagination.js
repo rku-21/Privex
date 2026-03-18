@@ -7,7 +7,6 @@ export const useQueryPagination=create((set,get)=>({
      isUsersLoding:false,
      isMessagesLoding:false,
      messages:[],
-     selectedUser:null,
 
      friendsPagination: {
       nextCursor: null,
@@ -272,11 +271,10 @@ getPendingRequests: async (reset = true) => {
             set({ isMessagesLoding: false });
         }
     },
-    loadMoreMessages: async () => {
+    loadMoreMessages: async (userId) => {
         try {
-            const {selectedUser}=get();
-            if(!selectedUser) return;
-            await get().getMessages(selectedUser._id,false)
+            if(!userId) return;
+            await get().getMessages(userId,false)
         }catch(error){
             toast.error(error.response?.data?.message);
         }

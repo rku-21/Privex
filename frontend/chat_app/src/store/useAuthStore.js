@@ -108,6 +108,10 @@ export const useAuthStore = create((set, get) => ({
   },
 
 
+
+
+
+  // connecting the user to the socket once he connected 
   connectSocket: () => {
     const { authUser, socket } = get();
 
@@ -139,6 +143,8 @@ export const useAuthStore = create((set, get) => ({
 
       newSocket.emit("user-online",authUser._id);
     });
+
+    
 
     
     // also a client side event fired when the connection is failed

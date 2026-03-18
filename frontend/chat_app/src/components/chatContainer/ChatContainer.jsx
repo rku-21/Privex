@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, use } from "react";
-import { Send, Phone, Video, Paperclip, X } from "lucide-react";
+import { Send, Phone, Video, Paperclip, X, Check, LoaderCircle } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useQueryPagination } from "../../store/useQueryPagination";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -312,6 +312,12 @@ const handleVideoCall = () => {
                   message.senderId === authUser._id ? "text-white/70" : "text-gray-500"
                 }`}
               >
+                {message.senderId === authUser._id && message.status === "sending" && (
+                  <LoaderCircle className="w-3 h-3 animate-spin opacity-80" />
+                )}
+                {message.senderId === authUser._id && message.status === "sent" && (
+                  <Check className="w-3.5 h-3.5 opacity-90" />
+                )}
                 <span className="text-xs">
                   {formatMessageTime(message.createdAt)}
                 </span>
