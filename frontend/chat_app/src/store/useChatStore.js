@@ -41,7 +41,7 @@ export const useChatStore=create((set,get)=>({
     //send the friend request to user 
     SendingFriendRequest:async(Id)=>{
       try {
-      const res=await axiosInstance.post(`/messages/friends/send/${Id}`);
+      const res=await axiosInstance.post(`/friends/send/${Id}`);
        return res.data;
       }
       catch(error){
@@ -52,7 +52,7 @@ export const useChatStore=create((set,get)=>({
     // remove the user request 
     removingFriendRequest:async(Id)=>{
       try{
-        const res=await axiosInstance.delete(`/messages/friends/cancel/${Id}`);
+        const res=await axiosInstance.delete(`/friends/cancel/${Id}`);
         
       }
       catch(error){
@@ -63,7 +63,7 @@ export const useChatStore=create((set,get)=>({
     // remove the user from the friend 
      removeFriend: async(Id) => {
       try {
-        const res = await axiosInstance.delete(`/messages/friends/remove/${Id}`);
+        const res = await axiosInstance.delete(`/friends/remove/${Id}`);
         toast.success("Friend removed successfully");
         return res.data;
       }
@@ -76,7 +76,7 @@ export const useChatStore=create((set,get)=>({
     // Accept the friend request of user 
     AcceptsTheRequests:async(Id)=>{
       try {
-        const res=await axiosInstance.post(`/messages/friends/accept/${Id}`);
+        const res=await axiosInstance.post(`/friends/accept/${Id}`);
       }
       catch(error){
 

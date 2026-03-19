@@ -13,6 +13,7 @@ const port = process.env.PORT || 5001;
 
 import authRoutes from './route/auth.route.js';
 import messageRoutes from './route/message.route.js';
+import friendsRoutes from './route/friends.route.js';
 import { testEmailService } from './lib/emailService.js';
 
 
@@ -34,6 +35,7 @@ app.use(
 // API routes 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/friends", friendsRoutes);
 
 // Health check
 app.get("/api/health", async (req, res) => {

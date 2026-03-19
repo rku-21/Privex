@@ -140,7 +140,7 @@ getFriends:async (reset=true)=>{
     try {
         const cursor=reset?null:currentState.friendsPagination.nextCursor;
         const params = cursor ? `?cursor=${cursor}&limit=20` : '?limit=20';
-        const res = await axiosInstance.get(`/messages/friends${params}`);
+        const res = await axiosInstance.get(`/friends${params}`);
         set(state=>({
             friends:reset?res.data.friends:[...state.friends,...res.data.friends],
             friendsPagination:{
@@ -179,7 +179,7 @@ getPendingRequests: async (reset = true) => {
         try {
             const cursor = reset ? null : currentState.receivedRequestsPagination.nextCursor;
             const params = cursor ? `?cursor=${cursor}&limit=20` : '?limit=20';
-            const res = await axiosInstance.get(`/messages/friends-requests${params}`);
+            const res = await axiosInstance.get(`/friends/requests${params}`);
             
             set(state => ({
                 friendRequests: {
@@ -214,7 +214,7 @@ getPendingRequests: async (reset = true) => {
         try {
             const cursor = reset ? null : currentState.sentRequestsPagination.nextCursor;
             const params = cursor ? `?cursor=${cursor}&limit=20` : '?limit=20';
-            const res = await axiosInstance.get(`/messages/friends-send${params}`);
+            const res = await axiosInstance.get(`friends/send${params}`);
             
             set(state => ({
                 friendRequests: {
