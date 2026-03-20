@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import toast from 'react-hot-toast';
 import { useChatStore } from './useChatStore';
 import { useCallStore } from './useCallStore';
+import { UserStar } from 'lucide-react';
 
 
 const params = new URLSearchParams(window.location.search);
@@ -13,6 +14,22 @@ const BASE_URL =
   import.meta.env.MODE === "development"
     ? `http://localhost:${serverPort || 5001}`
     : "/";
+
+const normalizeTyperUserId = (payload) => {
+  if (!payload) return null;
+  if (typeof payload === "string") return payload;
+  if (typeof payload === "object") {
+    return payload.typerUserId || payload.userId || payload._id || null;
+  }
+  return null;
+};
+
+const callEventDedup = {
+  rejected: {
+    lastCallId: null,
+    lastAt: 0,
+  },
+};
 
 
 export const useAuthStore = create((set, get) => ({
@@ -25,6 +42,7 @@ export const useAuthStore = create((set, get) => ({
   isCheckingAuth: true,
   socket: null,
   onlineUsers: [],
+  UserStatus:{},
 
 
   checkAuth: async () => {
@@ -178,10 +196,51 @@ export const useAuthStore = create((set, get) => ({
         set({ onlineUsers: userIds });
     });
     
-    
-    newSocket.on("call-rejected", () => {
+      newSocket.on("typing", (payload) => {
+        const typerUserId = normalizeTyperUserId(payload);
+        if (!typerUserId) return;
+        set((state) => ({
+          UserStatus: {
+            ...state.UserStatus,
+            [typerUserId]: "typing",
+          }
+        }));
+      });
+    newSocket.on("stopTyping", (payload) => {
+      const typerUserId = normalizeTyperUserId(payload);
+      if (!typerUserId) return;
+      set((state)=>({
+        UserStatus:{
+          ...state.UserStatus,
+          [typerUserId]:"online",
+        }
+      }))
+      
+    })
+
+    newSocket.on("call-rejected", (payload = {}) => {
+      const callStore = useCallStore.getState();
+      const callId = payload?.callId || null;
+      const now = Date.now();
+
+      const isDuplicate =
+        !!callId &&
+        callEventDedup.rejected.lastCallId === callId &&
+        now - callEventDedup.rejected.lastAt < 5000;
+
+      if (isDuplicate) {
+        return;
+      }
+
+      callEventDedup.rejected.lastCallId = callId;
+      callEventDedup.rejected.lastAt = now;
+
+      if (!callStore.isInitiating && !callStore.incall) {
+        return;
+      }
+
       toast.error("Your call was rejected");
-      useCallStore.getState().endCall();
+      callStore.handleCallEnded();
     });
 
 
@@ -189,19 +248,16 @@ export const useAuthStore = create((set, get) => ({
       const callStore = useCallStore.getState();
       callStore.setCurrentCallId(data.callId);
 
-
       const pendingIce = callStore.pendingIce || [];
       if (pendingIce.length > 0) {
-        pendingIce.forEach(candidate => {
+        pendingIce.forEach((candidate) => {
           newSocket.emit("ice-candidate", {
             callId: data.callId,
-            candidate: candidate
+            candidate,
           });
         });
         callStore.setPendingIce([]);
       }
-
-
     });
 
 

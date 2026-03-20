@@ -68,8 +68,7 @@ function cleanupCall(callId) {
   activeCalls.delete(callId);
 
 }
-
-
+// make the socket connection 
 io.on("connection", async (socket) => {
   const userId = socket.handshake.query?.userId;
   console.log("user connected to the port ",process.env.PORT);
@@ -85,6 +84,41 @@ io.on("connection", async (socket) => {
   } catch (error) {
     socket.emit("connection error", { message: "connection failed" });
   }
+
+  // detect typing and notify the receiver's active sockets
+  socket.on("typing", async ({ typerUser, receiverUser, typerUserId, receiverUserId } = {}) => {
+    const resolvedTyperUserId = typerUserId || typerUser?._id || socket.userId;
+    const resolvedReceiverUserId = receiverUserId || receiverUser?._id;
+
+    if (!resolvedTyperUserId || !resolvedReceiverUserId) {
+      return;
+    }
+
+    const receiverSockets = await getUserSockets(resolvedReceiverUserId);
+    if (receiverSockets.length > 0) {
+      receiverSockets.forEach((socketId) => {
+        io.to(socketId).emit("typing", { typerUserId: resolvedTyperUserId });
+      });
+    }
+  });
+
+  // listen for stop typing
+  socket.on("stopTyping", async ({ typerUser, receiverUser, typerUserId, receiverUserId } = {}) => {
+    const resolvedTyperUserId = typerUserId || typerUser?._id || socket.userId;
+    const resolvedReceiverUserId = receiverUserId || receiverUser?._id;
+
+    if (!resolvedTyperUserId || !resolvedReceiverUserId) {
+      return;
+    }
+
+    const receiverSocketIds = await getUserSockets(resolvedReceiverUserId);
+    if (receiverSocketIds.length > 0) {
+      receiverSocketIds.forEach((socketId) => {
+        io.to(socketId).emit("stopTyping", { typerUserId: resolvedTyperUserId });
+      });
+    }
+  });
+
 
   socket.on("call-user", async ({ to, offer, callType, from }) => {
     try {

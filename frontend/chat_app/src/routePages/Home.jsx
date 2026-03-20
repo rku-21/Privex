@@ -11,12 +11,21 @@ import { Sidebar } from "../components/sidebar/Sidebar.jsx"
 
 
 import { useThemeStore } from "../store/useThemeStore";
+import { useAuthStore } from "../store/useAuthStore";
 
 export const Home = () => {
-  const { selectedUser, setselectedUser, friends } = useChatStore();
+  const { selectedUser, setselectedUser, friends, SubscribeToMessages, unsubscribeToMessages } = useChatStore();
+  const { socket } = useAuthStore();
   const { theme } = useThemeStore();
   const location = useLocation();
 
+
+
+  useEffect(() => {
+    if (!socket) return;
+    SubscribeToMessages();
+    return () => unsubscribeToMessages();
+  }, [socket, SubscribeToMessages, unsubscribeToMessages]);
 
 
   useEffect(() => {

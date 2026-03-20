@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, use } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Send, Phone, Video, Paperclip, X, Check, LoaderCircle } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useQueryPagination } from "../../store/useQueryPagination";
@@ -10,28 +10,24 @@ import MessageSkeleton from "../../Skeleton/MessagesSkelton";
 import { useCallStore } from "../../store/useCallStore";
 import { axiosInstance } from "../../lib/axios";
 const ChatContainer = () => {
-  const { authUser, onlineUsers, socket } = useAuthStore();
+  const { authUser, onlineUsers, socket, UserStatus } = useAuthStore();
   const {initiateCall} = useCallStore();
+  // typing indicator
+  const [isTyping,setIsTyping]=useState(false);
+
   const { theme } = useThemeStore();
   const {
     selectedUser,
     sendMessages,
-    SubscribeToMessages,
-    unsubscribeToMessages,
     setselectedUser,
   } = useChatStore();
   const { messages, getMessages, isMessagesLoding } = useQueryPagination();
-  
-  useEffect(() => {
-    if (!socket) return;
-    SubscribeToMessages();
-    return () => unsubscribeToMessages();
-  }, [socket]); 
 
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
  
   useEffect(() => {
@@ -69,6 +65,26 @@ const ChatContainer = () => {
   const isOnline =
     (typeof selectedUser !== 'string' && selectedUser?.fullname === "Privex Bot") ||
     onlineUsers?.includes(userId);
+
+  const selectedUserStatus =
+    selectedUser?.fullname === "Privex Bot"
+      ? "Online"
+      : UserStatus?.[userId] === "typing" && isOnline
+        ? "Typing..."
+        : isOnline
+          ? "Online"
+          : "Offline";
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (socket && isTyping && authUser && userId) {
+        socket.emit("stopTyping", { typerUserId: authUser._id, receiverUserId: userId });
+      }
+    };
+  }, [socket, isTyping, authUser, selectedUser]);
 
 
 const handleAudioCall = () => {
@@ -126,12 +142,42 @@ const handleVideoCall = () => {
         text: text.trim(),
         [fileType]: imagePreview,
       });
+      if (socket && isTyping && authUser && userId) {
+        socket.emit("stopTyping", { typerUserId: authUser._id, receiverUserId: userId });
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      setIsTyping(false);
       setText("");
      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch {
       console.error("Failed to send message");
       toast.error("Failed to send message!");
     }
+  };
+  // handle the change of input feild 
+  const handleChange=(e)=>{
+     setText(e.target.value);
+
+      if (!socket || !authUser || !userId) return;
+
+      if(!isTyping){
+      // emit the typing event 
+      socket.emit("typing", { typerUserId: authUser._id, receiverUserId: userId });
+      setIsTyping(true);
+     }
+
+      if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      }
+
+      typingTimeoutRef.current = setTimeout(()=>{
+      // emit the stopTyping event
+      socket.emit("stopTyping", { typerUserId: authUser._id, receiverUserId: userId });
+      setIsTyping(false);
+     },3000);
   };
 
  
@@ -160,6 +206,7 @@ const handleVideoCall = () => {
       </div>
     );
   }
+
 
   return (
     <div
@@ -195,10 +242,14 @@ const handleVideoCall = () => {
               </h2>
               <p
                 className={`text-sm font-medium ${
-                  isOnline ? "text-green-500" : "text-gray-500"
+                  selectedUserStatus === "Typing..."
+                    ? "text-green-500"
+                    : selectedUserStatus === "Online"
+                      ? "text-green-500"
+                      : "text-gray-500"
                 }`}
               >
-                {isOnline ? "Online" : "Offline"}
+                {selectedUserStatus}
               </p>
             </div>
           </div>
@@ -373,7 +424,8 @@ const handleVideoCall = () => {
           <div className="flex-1 relative">
             <textarea
               value={text}
-              onChange={(e) => setText(e.target.value)}
+
+              onChange={handleChange}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();

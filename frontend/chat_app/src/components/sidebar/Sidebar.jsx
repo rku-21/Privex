@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { Search, MoreVertical, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore.js";
 import { useQueryPagination } from "../../store/useQueryPagination.js";
 import { useAuthStore } from "../../store/useAuthStore";
 import { SidebarSkeleton } from "../../Skeleton/SidebarSkeleton.jsx";
-import { use } from "react";
 
 export const Sidebar = () => {
 
-  const { onlineUsers, authUser } = useAuthStore();
+  const { onlineUsers, authUser,UserStatus} = useAuthStore();
   const {
     selectedUser,
     setselectedUser,
@@ -99,6 +98,16 @@ export const Sidebar = () => {
           const isActive = selectedUser?._id === user._id;
           const unreadCount = unreadCounts?.[user._id] || 0;
           const isLastItem = index === filteredUsers.length - 1;
+          const statusText =
+            user.fullname === "Privex Bot"
+              ? "Online"
+              : UserStatus[user._id] === "typing" && isOnline
+                ? "Typing..."
+                : isOnline
+                  ? "Online"
+                  : "Offline";
+          const statusColorClass =
+            statusText === "Offline" ? "text-gray-400" : "text-green-500";
 
           return (
             <div
@@ -122,12 +131,8 @@ export const Sidebar = () => {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-white font-normal truncate">{user.fullname}</h3>
-                  <p className="text-gray-400 text-sm truncate mt-1">
-                    {user.fullname === "Privex Bot"
-                      ? "Online"
-                      : isOnline
-                        ? "Online"
-                        : "Offline"}
+                  <p className={`${statusColorClass} text-sm truncate mt-1`}>
+                    {statusText}
                   </p>
                 </div>
               </div>
