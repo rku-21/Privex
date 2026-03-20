@@ -18,8 +18,8 @@ const OutgoingCallModal = () => {
   const [callDuration, setCallDuration] = useState(0);
   const [isConnecting, setIsConnecting] = useState(true);
 
-  const { callType, isMuted, isInitiating, isCallAccepted } = useCallStore();
-  const { selectedUser, friends } = useChatStore();
+  const { callType, isMuted, isInitiating, isCallAccepted, onCallWithWhom } = useCallStore();
+  const { selectedUser, friends, Users, searchResults } = useChatStore();
 
  useEffect(() => {
   const connectTimer = setTimeout(() => setIsConnecting(false), 0); 
@@ -47,11 +47,18 @@ useEffect(() => {
 
   if (!isInitiating || !selectedUser) return null;
 
-  const calleeData =
-    friends.find((friend) => friend._id === selectedUser._id) || {
-      fullname: "Unknown User",
-      profilePicture: "avatar.png",
-    };
+  const selectedUserId = typeof selectedUser === "string" ? selectedUser : selectedUser?._id;
+  const selectedUserObj = typeof selectedUser === "object" ? selectedUser : null;
+  const resolvedUser =
+    selectedUserObj ||
+    friends.find((friend) => friend._id === selectedUserId) ||
+    Users.find((user) => user._id === selectedUserId) ||
+    searchResults.find((user) => user._id === selectedUserId);
+
+  const calleeData = {
+    fullname: resolvedUser?.fullname || onCallWithWhom?.fullname || "Unknown User",
+    profilePicture: resolvedUser?.profilePicture || onCallWithWhom?.profilePicture || "/avatar.png",
+  };
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);

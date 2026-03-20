@@ -21,8 +21,8 @@ export const Home = () => {
 
   useEffect(() => {
     if (location.state?.directCall && location.state?.callerId) {
-
-      setselectedUser(location.state.callerId);
+      const callerFromState = location.state?.caller;
+      setselectedUser(callerFromState || location.state.callerId);
     }
   }, [location.state, setselectedUser]);
 

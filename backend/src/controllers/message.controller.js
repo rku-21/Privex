@@ -21,7 +21,7 @@ export const getAllUsers = async (req, res) => {
 
 
 
-// search pagination 
+// search  using efficiently using cursor in search bars 
 export const searchUsers = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -85,7 +85,7 @@ export const searchUsers = async (req, res) => {
 }
 
 
-// get user for the call interface 
+// get user for the call interface on the caller side 
 export const getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -103,39 +103,8 @@ export const getUserById = async (req, res) => {
 
 
 
-export const getAllfriends = async (req, res) => {
-  try {
-    const { cursor, limit = 20 } = req.query;
-    const userId = req.user._id;
 
-    const query = {
-      userId: userId,
-      status: "accepted"
-    };
-
-    if (cursor) {
-      query.createdAt = { $lt: new Date(cursor) };
-    }
-
-    const friendships = await Friendship.find(query)
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit) + 1)
-      .populate('friendId', 'fullname email profilePicture');
-
-    const hasMore = friendships.length > limit;
-    const friends = friendships.slice(0, limit).map(f => f.friendId);
-    const nextCursor = hasMore ? friendships[limit - 1].createdAt : null;
-
-    res.status(200).json({
-      friends,
-      nextCursor,
-      hasMore
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Not able to load all friends", error });
-  }
-}
-
+// using cursor based pagination get the message between user in the chat 
 export const getMessagesBetweenUsers = async (req, res) => {
   try {
     const myId = req.user._id;
@@ -181,7 +150,7 @@ export const getMessagesBetweenUsers = async (req, res) => {
   }
 }
 
-// send messages between two users
+// when client send the message by http , method take it save to db and emit message to the other client 
 export const sendMessges = async (req, res) => {
   try {
     const { text, image, video } = req.body;
@@ -275,208 +244,7 @@ export const sendMessges = async (req, res) => {
 };
 
 
-  // Send friend request
-export const friendRequestSend = async (req, res) => {
-  try {
-    const fromUserId = req.user._id;
-    const toUserId = req.params.id;
-
-    if (fromUserId.toString() === toUserId) {
-      return res.status(400).json({ error: "cannot send ourself request" });
-    }
-
-    const toUser = await User.findById(toUserId);
-    if (!toUser) return res.status(404).json({ error: "User not found" });
-
-  const existingFriendship = await Friendship.findOne({
-      userId: fromUserId,
-      friendId: toUserId
-    });
-
-    if (existingFriendship) {
-      return res.status(400).json({ error: "already friends" });
-    }
-
-    const friendship = new Friendship({
-      userId: fromUserId,
-      friendId: toUserId,
-      status: "pending"
-    });
-
-    await friendship.save();
-
-    res.status(200).json({ message: "Friend request sent" });
-  } catch (err) {
-    
-    res.status(500).json({ error: "Server error" });
-  }
-}
-// Remove sent friend request
-export const removeRequest = async (req, res) => {
-  try {
-    const fromUserId = req.user._id;
-    const toUserId = req.params.id;
-
-    if (!toUserId) {
-      return res.status(400).json({ message: "Error occured" });
-    }
-
-    const result = await Friendship.findOneAndDelete({
-      userId: fromUserId,
-      friendId: toUserId,
-      status: "pending"
-    });
-
-    if (!result) {
-      return res.status(404).json({ message: "Friend request not found" });
-    }
-
-    res.status(200).json({ message: "Friend request removed successfully" });
-  } catch (error) {
-   res.status(500).json({ message: "Internal server error." });
-  }
-};
-// Accept friend request
-export const friendRequestAccept = async (req, res) => {
-  try {
-    const currentUserId = req.user._id;
-    const fromUserId = req.params.id;
-
-    const fromUser = await User.findById(fromUserId);
-    if (!fromUser) return res.status(404).json({ error: "User not found" });
-    const friendship = await Friendship.findOneAndUpdate(
-      {
-        userId: fromUserId,
-        friendId: currentUserId,
-        status: "pending"
-      },
-      { status: "accepted" },
-      { new: true }
-    );
-
-    if (!friendship) {
-      return res.status(400).json({ error: "No such friend request" });
-    }
-    // bidrectional friendship
-    await Friendship.create({
-      userId: currentUserId,
-      friendId: fromUserId,
-      status: "accepted"
-    });
-
-    // Update friends count
-    await User.findByIdAndUpdate(currentUserId, { $inc: { friendsCount: 1 } });
-    await User.findByIdAndUpdate(fromUserId, { $inc: { friendsCount: 1 } });
-
-    res.status(200).json({ message: "Friend request accepted" });
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-}
-
-// Reject friend request 
-export const friendRejected = async (req, res) => {
-  try {
-    const currentUserId = req.user._id;
-    const otherUserId = req.params.id;
-
-    const otherUser = await User.findById(otherUserId);
-    if (!otherUser) return res.status(404).json({ error: "User not found" });
-
-      const wasAccepted = await Friendship.findOne({
-        $or: [
-          { userId: currentUserId, friendId: otherUserId, status: "accepted" },
-          { userId: otherUserId, friendId: currentUserId, status: "accepted" }
-        ]
-      });
-     const result = await Friendship.deleteMany({
-      $or: [
-        { userId: currentUserId, friendId: otherUserId },
-        { userId: otherUserId, friendId: currentUserId }
-      ]
-    });
-    if (result.deletedCount > 0 && wasAccepted) {
-        await User.findByIdAndUpdate(currentUserId, { $inc: { friendsCount: -1 } });
-        await User.findByIdAndUpdate(otherUserId, { $inc: { friendsCount: -1 } });
-    }
-    res.status(200).json({ message: "Friend removed" });
-  } catch (err) {
-   res.status(500).json({ error: "Server error" });
-  }
-}
-
- // received requests 
-export const getAllrequests = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { cursor, limit = 20 } = req.query;
-
-    const query = {
-      friendId: userId,
-      status: "pending"
-    };
-
-    if (cursor) {
-      query.createdAt = { $lt: new Date(cursor) };
-    }
-
-    const requests = await Friendship.find(query)
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit) + 1)
-      .populate('userId', '_id fullname email profilePicture');
-
-    const hasMore = requests.length > limit;
-    const receivedRequests = requests.slice(0, limit).map(r => r.userId);
-    const nextCursor = hasMore ? requests[limit - 1].createdAt : null;
-
-    res.status(200).json({
-      requests: receivedRequests,
-      nextCursor,
-      hasMore
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Internal Server Error",
-      error: error.message,
-    });
-  }
-};
-
-// Get all sended Requests      
-export const getAllsendRequest = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { cursor, limit = 20 } = req.query;
-
-    const query = {
-      userId: userId,
-      status: "pending"
-    };
-
-    if (cursor) {
-      query.createdAt = { $lt: new Date(cursor) };
-    }
-
-    const requests = await Friendship.find(query)
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit) + 1)
-      .populate('friendId', '_id fullname email profilePicture');
-
-    const hasMore = requests.length > limit;
-    const sentRequests = requests.slice(0, limit).map(r => r.friendId);
-    const nextCursor = hasMore ? requests[limit - 1].createdAt : null;
-
-    res.status(200).json({
-      requests: sentRequests,
-      nextCursor,
-      hasMore
-    });
-  } catch (error) {
-   res.status(500).json({ message: "Internal Server Error", error });
-  }
-}
-
-// Mark message as Read
+// Mark message as Read when user open the chat 
 export const markMessagesAsRead = async (req, res) => {
   try {
     const receiverId = req.user._id;

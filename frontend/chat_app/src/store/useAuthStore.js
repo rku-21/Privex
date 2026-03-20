@@ -19,6 +19,7 @@ export const useAuthStore = create((set, get) => ({
 
   authUser: null,
   isSigningUp: false,
+  isRequestingSignup:false,
   isLoginingUp: false,
   isUpdateingProfileUP: false,
   isCheckingAuth: true,
@@ -52,8 +53,20 @@ export const useAuthStore = create((set, get) => ({
       set({ isSigningUp: false });
     }
   },
-
-  login: async (data) => {
+  requestSignup:async(signupData)=>{
+    set({isRequestingSignup:true});
+    try{
+      const res = await axiosInstance.post('/auth/request-signup', signupData);
+      return res;
+    }catch(error){
+      toast.error("signup request fails");
+    }
+    finally{
+      set({isRequestingSignup:false});
+    }
+  },
+  
+ login: async (data) => {
     set({ isLoginingUp: true });
     try {
       const res = await axiosInstance.post("/auth/login", data);

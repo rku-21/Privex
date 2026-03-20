@@ -320,11 +320,18 @@ export const useCallStore = create((set, get) => ({
         callType: callType,
         from: useAuthStore.getState().authUser._id,
       });
-      const targetUser = useChatStore.getState().friends.find((friend) => friend._id === receiverId);
+      const chatState = useChatStore.getState();
+      const selectedUser = chatState.selectedUser;
+      const selectedUserId = typeof selectedUser === "string" ? selectedUser : selectedUser?._id;
+      const targetUser =
+        (selectedUserId === receiverId && typeof selectedUser === "object" ? selectedUser : null) ||
+        chatState.friends.find((friend) => friend._id === receiverId) ||
+        chatState.Users.find((user) => user._id === receiverId) ||
+        chatState.searchResults.find((user) => user._id === receiverId);
       set({
         onCallWithWhom: {
-          fullname: targetUser?.fullname,
-          profilePicture: targetUser?.profilePicture
+          fullname: targetUser?.fullname || "Unknown User",
+          profilePicture: targetUser?.profilePicture || "/avatar.png"
         }
       });
 

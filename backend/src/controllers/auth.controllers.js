@@ -11,6 +11,9 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+
+// user login by giving their credentials 
 export const login = async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -32,7 +35,7 @@ export const login = async (req, res) => {
 
         return res.status(200).json({
             message: "Login successfully",
-            _id: user._id,
+            _id: user._id, // _id is by default id given by mongodb for each document when created (uniquely) to identify each document in  a collection 
             email: user.email,
             fullname: user.fullname,
             profilePicture: user.profilePicture,
@@ -45,6 +48,9 @@ export const login = async (req, res) => {
         return res.status(500).json({ message: "Internal server error", error: error.message });
     }
 }
+
+
+// when user request for the signup 
 export const requestSignup = async (req, res) => {
     const { fullname, email, password, profilepic } = req.body;
 
@@ -67,17 +73,17 @@ export const requestSignup = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "User already exists with this email" });
         }
-        const salt = await bcrypt.genSalt(10);
+        const salt = await bcrypt.genSalt(10); // hash(password+salt) give same hash all time if the salt is same
         const hashedPassword = await bcrypt.hash(password, salt);
+
+        // generate the otp
         const otp = generateOTP();
         try {
             await sendOTPEmail(email, otp, fullname);
             console.log('OTP email sent successfully to:', email);
         } catch (emailError) {
-            console.error('Failed to send OTP email:', emailError.message);
-            return res.status(500).json({
+             return res.status(500).json({
                 message: "Failed to send verification email",
-                error: process.env.NODE_ENV === "development" ? emailError.message : undefined
             });
         }
 
@@ -96,22 +102,16 @@ export const requestSignup = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error in requestSignup:", error);
-        console.error("Error details:", {
-            message: error.message,
-            name: error.name,
-            code: error.code
-        });
         return res.status(500).json({
             message: "Failed to process request",
-            error: process.env.NODE_ENV === "development" ? error.message : "Internal server error"
         });
     }
 };
 
+
+// now the user enter the otp and make  http call to verify it 
 export const verifySignup = async (req, res) => {
     const { email, otp } = req.body;
-
     try {
         if (!email || !otp) {
             return res.status(400).json({ message: "Please provide email and OTP" });
@@ -121,22 +121,12 @@ export const verifySignup = async (req, res) => {
         if (!pendingSignup) {
             return res.status(400).json({ message: "OTP expired or invalid  Please request a new one" });
         }
-
-        // console.log(' Stored OTP:', pendingSignup.otp);
-        // console.log(' Received OTP:', otp.trim());
-        // console.log(' OTPs match:', pendingSignup.otp === otp.trim());
-        // console.log('Stored OTP type:', typeof pendingSignup.otp);
-        // console.log(' Received OTP type:', typeof otp);
-
-
         const storedOTP = String(pendingSignup.otp).trim();
         const receivedOTP = String(otp).trim();
 
         if (storedOTP !== receivedOTP) {
             return res.status(400).json({ message: "Invalid OTP  Please try again !" });
         }
-
-
         const newUser = new User({
             email: pendingSignup.email,
             fullname: pendingSignup.fullname,
@@ -144,27 +134,7 @@ export const verifySignup = async (req, res) => {
             profilePicture: pendingSignup.profilePicture
         });
         await newUser.save();
-        const privexUser = await User.findOne({ email: "privex@chat.com" });
-        if (privexUser) {
-            await Friendship.create({
-                userId: newUser._id,
-                friendId: privexUser._id,
-                status: "accepted"
-            });
-            await Friendship.create({
-                userId: privexUser._id,
-                friendId: newUser._id,
-                status: "accepted"
-            });
-
-            await User.findByIdAndUpdate(newUser._id, { $inc: { friendsCount: 1 } });
-            await User.findByIdAndUpdate(privexUser._id, { $inc: { friendsCount: 1 } });
-        }
-
-
         await PendingSignup.deleteOne({ email });
-
-
         generateToken(newUser._id, res);
 
         return res.status(201).json({
@@ -184,6 +154,7 @@ export const verifySignup = async (req, res) => {
 };
 
 
+// now if the user request http to resend the otp 
 export const resendOTP = async (req, res) => {
     const { email } = req.body;
 
@@ -196,12 +167,10 @@ export const resendOTP = async (req, res) => {
         if (!pendingSignup) {
             return res.status(400).json({ message: "No pending request is found with this email" });
         }
-
-
         const otp = generateOTP();
         pendingSignup.otp = otp;
         pendingSignup.createdAt = Date.now();
-        await pendingSignup.save();
+        await pendingSignup.save(); // without this changes are not persisted
         await sendOTPEmail(email, otp, pendingSignup.fullname);
         return res.status(200).json({
             message: "new otp is sended"
@@ -211,81 +180,6 @@ export const resendOTP = async (req, res) => {
         return res.status(500).json({ message: "Failed", error: error.message });
     }
 };
-export const signup = async (req, res) => {
-
-    const { fullname, email, password, profilepic } = req.body;
-    try {
-        if (!email || !fullname || !password) {
-            return res.status(400).json({ message: "no credentials provided" });
-        }
-        if (password.length < 6) {
-            return res.status(400).json({ message: "password must be > 6 char" });
-        }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ message: "Invalid email format" });
-        }
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ message: "user already exist with this email" });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        const newUser = new User({
-            fullname: fullname,
-            email: email,
-            password: hashedPassword,
-            profilePicture: profilepic || "",
-        });
-
-        if (newUser) {
-
-            const token = generateToken(newUser._id, res);
-            try {
-                await newUser.save();
-                const privexUser = await User.findOne({ email: "privex@chat.com" });
-                if (privexUser) {
-
-                    await Friendship.create({
-                        userId: newUser._id,
-                        friendId: privexUser._id,
-                        status: "accepted"
-                    });
-                    await Friendship.create({
-                        userId: privexUser._id,
-                        friendId: newUser._id,
-                        status: "accepted"
-                    });
-                    await User.findByIdAndUpdate(newUser._id, { $inc: { friendsCount: 1 } });
-                    await User.findByIdAndUpdate(privexUser._id, { $inc: { friendsCount: 1 } });
-                }
-
-                return res.status(201).json({
-                    message: "User created successfully",
-                    _id: newUser._id,
-                    email: newUser.email,
-                    fullname: newUser.fullname,
-                    profilePicture: newUser.profilePicture,
-                    coverPhoto: newUser.coverPhoto,
-                    about: newUser.about,
-                    friendsCount: newUser.friendsCount,
-                });
-
-            } catch (error) {
-                return res.status(500).json({ message: "error in signup", error: error.message });
-            }
-        }
-        else {
-            return res.status(500).json({ message: "Internal server error" });
-        }
-
-    }
-    catch (error) {
-        return res.status(500).json(error);
-    }
-
-}
 export const logout = (req, res) => {
     try {
         res.cookie("jwt", "", { maxAge: 0 });

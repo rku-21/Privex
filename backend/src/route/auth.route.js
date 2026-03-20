@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import {signup, login, logout, updateProfile, checkAuth, requestSignup, verifySignup, resendOTP} from '../controllers/auth.controllers.js';
+import { login, logout, updateProfile, checkAuth, requestSignup, verifySignup, resendOTP} from '../controllers/auth.controllers.js';
 import { protectRoute } from '../middleware/auth.protectRoute.js';
 
 // OTP signup requests
@@ -9,7 +9,7 @@ router.post('/verify-signup', verifySignup);
 router.post('/resend-otp', resendOTP);
 
 
-router.post('/signup', signup);
+// router.post('/signup', signup);
 
 router.post('/login', login);
 router.post('/logout', logout);

@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { axiosInstance } from '../lib/axios';
+import toast from 'react-hot-toast';
+
 
 
 export default function Signup() {
@@ -17,17 +19,19 @@ export default function Signup() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
-  const { setAuthUser } = useAuthStore();
+  const { setAuthUser,requestSignup } = useAuthStore();
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
   const validForm = () => {
-    if (!formData.fullname.trim()) return window.toast?.error('Name is required');
-    if (!formData.email.trim()) {
-      return window.toast?.error('Email is required');
+    if (!formData.fullname.trim()){
+      return toast.error("Name is  Required");
     }
-    if (!formData.password) return window.toast?.error('Password is required');
+    if (!formData.email.trim()) {
+      return toast.error('Email is required');
+    }
+    if (!formData.password) return toast.error('Password is required');
     if (formData.password.length < 6) return window.toast?.error('Password must be at least 6 characters');
     if (formData.password !== formData.confirmPassword) return window.toast?.error('Passwords do not match');
     return true;
@@ -37,24 +41,19 @@ export default function Signup() {
     e.preventDefault();
     const success = validForm();
     if (success !== true) return;
-
     setIsLoading(true);
-
-   
     const timeoutId = setTimeout(() => {
       setIsLoading(false);
       window.toast?.error('Request timeout');
     }, 35000); 
 
     try {
-      const { confirmPassword, ...signupData } = formData;
-      const res = await axiosInstance.post('/auth/request-signup', signupData);
+      const { confirmPassword, ...signupData } = formData; // remove the confrimPassword
+      const res = await requestSignup(signupData);
       clearTimeout(timeoutId); 
       window.toast?.success(res.data.message || 'OTP sent to your email!');
       setStep(2);
       setResendTimer(60); 
-
-     
       const interval = setInterval(() => {
         setResendTimer((prev) => {
           if (prev <= 1) {
@@ -67,19 +66,6 @@ export default function Signup() {
     } catch (error) {
       clearTimeout(timeoutId); 
       console.error('OTP request error', error);
-
-      
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        window.toast?.error('Request timeout');
-      } else if (error.response?.status === 500) {
-        window.toast?.error(error.response?.data?.message || 'response error');
-      } else if (error.response?.status === 400) {
-        window.toast?.error(error.response?.data?.message || 'Invalid signup data');
-      } else if (!error.response) {
-        window.toast?.error('Network error');
-      } else {
-        window.toast?.error(error.response?.data?.message || 'Failed to send OTP');
-      }
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +76,6 @@ export default function Signup() {
     if (!otp.trim() || otp.length !== 6) {
       return window.toast?.error('Please enter valid 6 digit OTP');
     }
-
     setIsLoading(true);
     try {
       const res = await axiosInstance.post('/auth/verify-signup', {
@@ -138,13 +123,6 @@ export default function Signup() {
       }, 1000);
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error('Resend OTP error:', error);
-
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        window.toast?.error('Request timeout');
-      } else {
-        window.toast?.error(error.response?.data?.message || 'Failed to resend OTP');
-      }
     } finally {
       setIsLoading(false);
     }
@@ -237,7 +215,7 @@ export default function Signup() {
                   type="email"
                   id="email"
                   name="email"
-                  value={formData.email}
+                  value={formData.email} 
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className={`w-full px-4 py-3 rounded-lg border transition-colors duration-200 ${isDark
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500'

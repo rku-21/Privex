@@ -80,7 +80,7 @@ const IncomingCallNotification = () => {
 
   const handleAccept = async () => {
      await acceptCall();
-    navigate('/', { state: { directCall: true, callerId: from?._id } });
+    navigate('/', { state: { directCall: true, callerId: from?._id, caller: from } });
   };
 
   const handleReject = () => {
