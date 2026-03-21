@@ -11,79 +11,10 @@ const appendUniqueMessage = (messages, newMessage) => {
   return [...messages, newMessage];
 };
 export const useChatStore=create((set,get)=>({
-    friends:[],
-    friendRequests: {
-      sent: [],
-      received: [],
-    },
     unreadCounts: {},  
     ackedMessageIds: {},
     selectedUser:null,
-    isUsersLoding:false,
     isMessagesLoding:false,
-    Users:[],
-    searchResults: [],
-
-
-     getAllUsers:async()=>{
-      set({isUsersLoding:true});
-      try {
-        const res=await axiosInstance.get("/messages/users");
-        set({Users:res.data});
-      }
-      catch(error){
-        toast.error(error.response.data.message);
-      }
-      finally{
-        set({isUsersLoding:false});
-      }
-    },
-    //send the friend request to user 
-    SendingFriendRequest:async(Id)=>{
-      try {
-      const res=await axiosInstance.post(`/friends/send/${Id}`);
-       return res.data;
-      }
-      catch(error){
-        throw error;
-      }
-    },
-
-    // remove the user request 
-    removingFriendRequest:async(Id)=>{
-      try{
-        const res=await axiosInstance.delete(`/friends/cancel/${Id}`);
-        
-      }
-      catch(error){
-        toast.error(error.response?.data?.message || "Failed to cancel request");
-      }
-    },
-
-    // remove the user from the friend 
-     removeFriend: async(Id) => {
-      try {
-        const res = await axiosInstance.delete(`/friends/remove/${Id}`);
-        toast.success("Friend removed successfully");
-        return res.data;
-      }
-      catch(error) {
-        toast.error(error.response?.data?.message || "Failed to remove friend");
-        throw error;
-      }
-    },
-
-    // Accept the friend request of user 
-    AcceptsTheRequests:async(Id)=>{
-      try {
-        const res=await axiosInstance.post(`/friends/accept/${Id}`);
-      }
-      catch(error){
-
-        toast.error(error.message)
-      }
-
-    },
 
 
    // send message to the user this is happening inside the chat-container
@@ -217,6 +148,7 @@ export const useChatStore=create((set,get)=>({
 // when you are not chatting with the selectedUser 
       unsubscribeToMessages:()=>{
         const socket=useAuthStore.getState().socket;
+        if(!socket) return ;
         socket.off("newMessage");
         socket.off("message-sent-Ack");
      },

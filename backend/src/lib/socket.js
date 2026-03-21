@@ -6,6 +6,7 @@ import express from "express";
 import { randomUUID } from "crypto";
 import User from "../models/user.model.js";
 import {createAdapter} from "@socket.io/redis-adapter"
+import {MessageSocketEvents } from "./message.Socket.js";
 
 const pubClient=redis;
 const subClient=redis.duplicate();
@@ -85,39 +86,8 @@ io.on("connection", async (socket) => {
     socket.emit("connection error", { message: "connection failed" });
   }
 
-  // detect typing and notify the receiver's active sockets
-  socket.on("typing", async ({ typerUser, receiverUser, typerUserId, receiverUserId } = {}) => {
-    const resolvedTyperUserId = typerUserId || typerUser?._id || socket.userId;
-    const resolvedReceiverUserId = receiverUserId || receiverUser?._id;
-
-    if (!resolvedTyperUserId || !resolvedReceiverUserId) {
-      return;
-    }
-
-    const receiverSockets = await getUserSockets(resolvedReceiverUserId);
-    if (receiverSockets.length > 0) {
-      receiverSockets.forEach((socketId) => {
-        io.to(socketId).emit("typing", { typerUserId: resolvedTyperUserId });
-      });
-    }
-  });
-
-  // listen for stop typing
-  socket.on("stopTyping", async ({ typerUser, receiverUser, typerUserId, receiverUserId } = {}) => {
-    const resolvedTyperUserId = typerUserId || typerUser?._id || socket.userId;
-    const resolvedReceiverUserId = receiverUserId || receiverUser?._id;
-
-    if (!resolvedTyperUserId || !resolvedReceiverUserId) {
-      return;
-    }
-
-    const receiverSocketIds = await getUserSockets(resolvedReceiverUserId);
-    if (receiverSocketIds.length > 0) {
-      receiverSocketIds.forEach((socketId) => {
-        io.to(socketId).emit("stopTyping", { typerUserId: resolvedTyperUserId });
-      });
-    }
-  });
+  // initilize all message related event over here
+  MessageSocketEvents(io, socket);
 
 
   socket.on("call-user", async ({ to, offer, callType, from }) => {

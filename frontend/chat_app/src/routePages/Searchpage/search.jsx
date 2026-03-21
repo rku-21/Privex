@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { X, SearchIcon, Loader2 } from "lucide-react";
-import { useChatStore } from "../../store/useChatStore";
+import { useFriendStore } from "../../store/useFriend.Store";
 import { useQueryPagination } from "../../store/useQueryPagination";
 import { useAuthStore } from "../../store/useAuthStore";
 import BottomNavbar from "../../components/bottomNav/BottomNavbar";
@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 const Search = () => {
   const { authUser } = useAuthStore();
 
-  const { SendingFriendRequest, removingFriendRequest } = useChatStore();
+  const { SendingFriendRequest, removingFriendRequest } = useFriendStore();
   const {
     searchUsers,
     searchResults,

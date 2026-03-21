@@ -4,6 +4,7 @@ import Friendship from '../models/friendShip.model.js';
 import cloudinary from '../lib/cloudinary.js';
 import { getReceiverSocketId, io } from '../lib/socket.js';
 import { getUserSockets } from '../lib/redisPresence.js';
+import { emitMessageToUser, broadcastMessageEvent } from '../lib/message.Socket.js';
 import mongoose from 'mongoose';
 
 
@@ -227,15 +228,13 @@ export const sendMessges = async (req, res) => {
       });
     }
 
-    const receiverSocketIds = await getUserSockets(receiverId);
-    if (receiverSocketIds.length > 0) {
-      receiverSocketIds.forEach((socketId) => {
-        io.to(socketId).emit("newMessage", newMessage);
-      });
-
-    } else {
-      console.log(` user is offline  message saved to DB`);
+    // Emit message to receiver using new message socket utility
+    const receiverIsOnline = await emitMessageToUser(io, receiverId, "newMessage", newMessage);
+    
+    if (!receiverIsOnline) {
+      console.log(`Receiver ${receiverId} is offline - message saved to DB for later delivery`);
     }
+
     res.status(201).json(newMessage);
   } catch (error) {
     console.error("Error sending message", error);

@@ -14,7 +14,7 @@ import { useThemeStore } from "../store/useThemeStore";
 import { useAuthStore } from "../store/useAuthStore";
 
 export const Home = () => {
-  const { selectedUser, setselectedUser, friends, SubscribeToMessages, unsubscribeToMessages } = useChatStore();
+  const { selectedUser, setselectedUser, SubscribeToMessages, unsubscribeToMessages } = useChatStore();
   const { socket } = useAuthStore();
   const { theme } = useThemeStore();
   const location = useLocation();
@@ -35,21 +35,6 @@ export const Home = () => {
     }
   }, [location.state, setselectedUser]);
 
-
-  useEffect(() => {
-
-    if (!selectedUser || !friends || friends.length === 0) return;
-
-
-    const userExists = typeof selectedUser === 'string'
-      ? friends.some(friend => friend._id === selectedUser)
-      : friends.some(friend => friend._id === selectedUser._id);
-
-    if (!userExists && friends.length > 0) {
-    
-      setselectedUser(null);
-    }
-  }, [selectedUser, friends, setselectedUser]);
   return (
     <div className={`parent${theme === "dark" ? " dark-mode" : ""} `}>
       <Navbar />

@@ -3,13 +3,13 @@ import { Users } from "lucide-react";
 import BottomNavbar from "../../components/bottomNav/BottomNavbar";
 
 import { Navbar } from "../../components/navbar/Navbar";
-import { useChatStore } from "../../store/useChatStore";
+import { useFriendStore } from "../../store/useFriend.Store";
 import { useQueryPagination } from "../../store/useQueryPagination";
 import toast from "react-hot-toast";
 
 export const RequestReceived = () => {
   
-  const { AcceptsTheRequests, removingFriendRequest } = useChatStore();
+  const { AcceptsTheRequests, removingFriendRequest } = useFriendStore();
   const {
     getPendingRequests,
     friendRequests,
