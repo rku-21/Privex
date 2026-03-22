@@ -369,6 +369,12 @@ const handleVideoCall = () => {
                 {message.senderId === authUser._id && message.status === "sent" && (
                   <Check className="w-3.5 h-3.5 opacity-90" />
                 )}
+                {message.senderId === authUser._id && message.status === "seen" && (
+                  <div className="flex -space-x-2">
+                    <Check className="w-3.5 h-3.5 text-gray-900 opacity-90" />
+                    <Check className="w-3.5 h-3.5 text-gray-900 opacity-90" />
+                  </div>
+                )}
                 <span className="text-xs">
                   {formatMessageTime(message.createdAt)}
                 </span>

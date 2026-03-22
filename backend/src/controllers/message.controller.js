@@ -263,10 +263,21 @@ export const markMessagesAsRead = async (req, res) => {
       {
         chatId: chatId,
         senderId: new mongoose.Types.ObjectId(senderId),
-        read: false
+        status: { $ne: "seen" }
       },
-      { $set: { read: true } }
+      { $set: { read: true, status: "seen" } }
     );
+
+    // Emit message seen status to sender
+    if (result.modifiedCount > 0) {
+      const { emitMessageToUser } = await import("../lib/message.Socket.js");
+      await emitMessageToUser(io, senderId, "message-seen-Ack", {
+        receiverId: receiverId._id,
+        senderId: senderId,
+        chatId: chatId,
+        markedCount: result.modifiedCount
+      });
+    }
 
     res.status(200).json({
       message: "All messages Marked as read",

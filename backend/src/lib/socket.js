@@ -6,7 +6,8 @@ import express from "express";
 import { randomUUID } from "crypto";
 import User from "../models/user.model.js";
 import {createAdapter} from "@socket.io/redis-adapter"
-import {MessageSocketEvents } from "./message.Socket.js";
+import {MessageSocketEvents,emitMessageToUser} from "./message.Socket.js";
+import { send } from "process";
 
 const pubClient=redis;
 const subClient=redis.duplicate();
@@ -88,6 +89,24 @@ io.on("connection", async (socket) => {
 
   // initilize all message related event over here
   MessageSocketEvents(io, socket);
+
+  socket.on("message-seen-Ack",async({receiver,sender}={})=>{
+    if(!receiver || !sender) return;
+    
+    try {
+      // Emit to receiver that the sender has seen the message
+      const receiverIsOnline = await emitMessageToUser(io, receiver._id || receiver, "message-seen-Ack", {
+        senderId: sender._id || sender,
+        status: "seen"
+      }); 
+      
+      if(!receiverIsOnline){
+        console.log("receiver is offline - message marked as seen in db");
+      }
+    } catch(error) {
+      console.error("Error in message-seen-Ack:", error);
+    }
+  })
 
 
   socket.on("call-user", async ({ to, offer, callType, from }) => {

@@ -59,6 +59,33 @@ export function MessageSocketEvents(io, socket) {
             socket.emit("stopTyping-error", { message: "error to emit stopTyping" });
         }
     });
+
+    /**
+     * Listen for message seen acknowledgment
+     * Emits "message-seen-Ack" back to receiver when messages are marked as seen
+     */
+    socket.on("message-read-status", async ({ chatId, receiverId, senderId }) => {
+        try {
+            if (!chatId || !receiverId || !senderId) {
+                console.warn("Invalid parameters for message read status");
+                return;
+            }
+            
+            const senderSockets = await getUserSockets(senderId);
+            if (senderSockets.length > 0) {
+                senderSockets.forEach((socketId) => {
+                    io.to(socketId).emit("message-read-status", { 
+                        chatId, 
+                        receiverId, 
+                        status: "seen" 
+                    });
+                });
+                console.log(`Sent read status to sender ${senderId}`);
+            }
+        } catch (error) {
+            socket.emit("read-status-error", { message: "error in sending read status" });
+        }
+    });
 }
 
 /**

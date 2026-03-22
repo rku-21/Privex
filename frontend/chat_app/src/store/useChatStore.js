@@ -81,37 +81,53 @@ export const useChatStore=create((set,get)=>({
     socket.off("newMessage");
     socket.off("message-sent-Ack");
 
+    // listen for the new messages 
     socket.on("newMessage", (newMessage) => {
       const { selectedUser } = get();
-      const currentUserId = String(useAuthStore.getState().authUser?._id || "");
 
+      //just for the safety wheater the user is online or not 
+      const currentUserId = String(useAuthStore.getState().authUser?._id || "");
       if (!currentUserId) return;
+
+      // is the currentUserid match any then user is involve in this message 
       const [userId1, userId2] = (newMessage.chatId || "").split("_");
       const isMessageForMe = userId1 === currentUserId || userId2 === currentUserId;
-
+      
+      // if the user is not involve in this message just return 
       if (!isMessageForMe) {
          return;
       }
 
+      // get teh sendrId & check currentUser is sender ?? 
       const messageSenderId = String(newMessage.senderId);
       const isFromMe = messageSenderId === currentUserId;
+
+      // get the selecteduserId
       const selectedUserId = typeof selectedUser === "string" ? selectedUser : selectedUser?._id;
+
+      
+      // check is chat open between the users 
       const isCurrentChatOpen =
         !!selectedUserId &&
         [currentUserId, String(selectedUserId)].sort().join("_") === newMessage.chatId;
+      
 
+      // if current chat open add message to current chat uniquely 
       if (isCurrentChatOpen) {
         useQueryPagination.setState((state) => ({
           messages: appendUniqueMessage(state.messages, newMessage),
         }));
-
+        
+        // as chat is open mark the message is read instantly (this can be bottleneck)
         if (!isFromMe) {
           axiosInstance.post(`/messages/${messageSenderId}/read`)
-            .catch(err => console.error("Error", err));
+            .catch(err => console.error("Error marking message as read:", err));
         }
         return;
       }
 
+      //now the case that chat is not open 
+      // if the chat not open and some one send message to me increase the count for that particular user 
       if (!isFromMe) {
        set((state) => ({
           unreadCounts: {
@@ -126,47 +142,90 @@ export const useChatStore=create((set,get)=>({
     socket.on("message-sent-Ack",(message)=>{
       if (!message?._id) return;
       const ackId = String(message._id);
+
+      // add the acked_id to ackedMessagesIds
       set((state) => ({
         ackedMessageIds: {
           ...state.ackedMessageIds,
           [ackId]: true,
         },
       }));
+
+      // find the message rececived in messages and upadte as sent 
       useQueryPagination.setState((state) => ({
         messages: state.messages.map((msg) =>
           String(msg._id) === ackId ? { ...msg, status: "sent" } : msg
         ),
       }));
-    })
+    });
 
+    // Listen for message seen acknowledgment (double tick)
+    socket.on("message-seen-Ack", (data) => {
+      if (!data?.senderId) return;
+      
+      const { senderId, chatId } = data;
+      const currentUserId = String(useAuthStore.getState().authUser?._id || "");
+      
+      if (senderId !== currentUserId) {
+        return;
+      }
 
+      // Update all messages from this sender to "seen" status
+      useQueryPagination.setState((state) => ({
+        messages: state.messages.map((msg) =>
+          String(msg.senderId) === currentUserId && msg.status !== "failed"
+            ? { ...msg, status: "seen" }
+            : msg
+        ),
+      }));
+    });
 
-   socket.on("connect_error", (error) => {
+    socket.on("connect_error", (error) => {
+      toast.error(error.response?.data);
    });
 },
 
-// when you are not chatting with the selectedUser 
+// when you are not chatting with the selectedUser // chat colse and opening new chat  (chat swithcing) 
       unsubscribeToMessages:()=>{
+        const authUser=useAuthStore.getState().authUser;
+        if(!authUser) return;
         const socket=useAuthStore.getState().socket;
         if(!socket) return ;
+
+        // first close the old listener of this user with old selectedUser
         socket.off("newMessage");
         socket.off("message-sent-Ack");
      },
-    setselectedUser: async (selectedUser)=>{ 
+     // now user select other chat 
+     setselectedUser: async (selectedUser)=>{ 
       set({selectedUser});
-
+      
+      // store in local Storage this open chat ko
       if (selectedUser) {
         localStorage.setItem("chat-selected-user", JSON.stringify(selectedUser));
       } else {
         localStorage.removeItem("chat-selected-user");
         return;
       }
-
+      
+      // now get the selected user Id 
       const selectedUserId = typeof selectedUser === "string" ? selectedUser : selectedUser?._id;
       if (!selectedUserId) {
         return;
       }
+      
+      // as the user have selected this user i should emit the seen message to sender of this (selectedUser should know that he always sent message is seen by the user)
+      const authUser = useAuthStore.getState().authUser;
+      const socket = useAuthStore.getState().socket;
 
+      if (socket && authUser) {
+        socket.emit("message-seen-Ack", {
+          receiver: selectedUser,
+          sender: authUser
+        });
+      }
+
+      // mark this selectedUser all unread messages as read as its chat is open 
       // when selecting a chat, mark all messages from that user as read and clear unread badge locally
       try {
          await axiosInstance.post(`/messages/${selectedUserId}/read`);
@@ -179,6 +238,10 @@ export const useChatStore=create((set,get)=>({
         toast.error(error.response?.data?.message || "Failed to mark messages as read");
       }
     },
+
+
+
+    // already handled in socket logic above this both but may require if want to upadte the state directly from the other part of the app 
     IncrementUnreadCount: (senderId) => {
       set((state) => ({
         unreadCounts: {
@@ -187,9 +250,6 @@ export const useChatStore=create((set,get)=>({
         },
       }));
     },
-
-    
-
     ResetUnreadCount: (senderId) => {
       set((state) => {
         const newCounts = { ...state.unreadCounts };
