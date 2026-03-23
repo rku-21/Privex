@@ -316,7 +316,7 @@ const handleVideoCall = () => {
         {messages.map((message) => (
           <div
             key={message._id}
-            className={`flex ${
+            className={`flex break-words ${
               message.senderId === authUser._id
                 ? "justify-end"
                 : "justify-start"

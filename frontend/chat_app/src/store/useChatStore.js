@@ -1,3 +1,4 @@
+// the best thing is always think in terms of the authUser and make state in keeping in mind that you are making the state for him alone now what can be state ok 
 import {create} from "zustand"
 import toast from "react-hot-toast"
 import { axiosInstance } from "../lib/axios"
@@ -16,17 +17,21 @@ export const useChatStore=create((set,get)=>({
     selectedUser:null,
     isMessagesLoding:false,
 
-
-   // send message to the user this is happening inside the chat-container
+    // send message to the user this is happening inside the chat-container
    sendMessages: async (messageData) => {
     const { selectedUser } = get();
     const socket = useAuthStore.getState().socket;
+    const authUser = useAuthStore.getState().authUser;
 
         const  tempId=Date.now().toString();
+        // Calculate chatId same way as backend
+        const chatId = [authUser._id.toString(), selectedUser._id].sort().join('_');
+        
         const tempMessage={
           _id: tempId,
-          senderId:useAuthStore.getState().authUser?._id,
+          senderId: authUser._id,
           receiverId:selectedUser._id,
+          chatId: chatId,  // ✅ Add chatId to temp message
           text:messageData.text,
           image:messageData.image||null,
           status:"sending",
@@ -70,9 +75,7 @@ export const useChatStore=create((set,get)=>({
       }));
     }
   },
-
-
-  // receiver subscribing to the message 
+  // authUser subscribing to the messages 
   SubscribeToMessages: () => {
    const socket = useAuthStore.getState().socket;
     if (!socket) {
@@ -161,7 +164,7 @@ export const useChatStore=create((set,get)=>({
 
     // Listen for message seen acknowledgment (double tick)
     socket.on("message-seen-Ack", (data) => {
-      if (!data?.senderId) return;
+      if (!data?.senderId || !data?.chatId) return;
       
       const { senderId, chatId } = data;
       const currentUserId = String(useAuthStore.getState().authUser?._id || "");
@@ -170,15 +173,17 @@ export const useChatStore=create((set,get)=>({
         return;
       }
 
-      // Update all messages from this sender to "seen" status
+      // Update messages from this sender in THIS chat to "seen" status
       useQueryPagination.setState((state) => ({
         messages: state.messages.map((msg) =>
-          String(msg.senderId) === currentUserId && msg.status !== "failed"
+          msg.chatId === chatId &&
+          String(msg.senderId) === currentUserId && 
+          msg.status !== "failed"
             ? { ...msg, status: "seen" }
             : msg
         ),
       }));
-    });
+      });
 
     socket.on("connect_error", (error) => {
       toast.error(error.response?.data);
@@ -195,6 +200,7 @@ export const useChatStore=create((set,get)=>({
         // first close the old listener of this user with old selectedUser
         socket.off("newMessage");
         socket.off("message-sent-Ack");
+        socket.off("message-seen-Ack");
      },
      // now user select other chat 
      setselectedUser: async (selectedUser)=>{ 
@@ -214,16 +220,18 @@ export const useChatStore=create((set,get)=>({
         return;
       }
       
-      // as the user have selected this user i should emit the seen message to sender of this (selectedUser should know that he always sent message is seen by the user)
+      // as the authUser have selected this user i should emit the seen message to sender of this (selectedUser should know that his all send message is seen by the user)
       const authUser = useAuthStore.getState().authUser;
       const socket = useAuthStore.getState().socket;
 
-      if (socket && authUser) {
-        socket.emit("message-seen-Ack", {
-          receiver: selectedUser,
-          sender: authUser
-        });
-      }
+      // if (socket && authUser) {
+      //   socket.emit("message-seen-Ack", {
+      //     receiver: selectedUser,
+      //     sender: authUser
+      //   });
+      // }
+
+      // for now the marking is done using http but its bottle neck use socket event to do so 
 
       // mark this selectedUser all unread messages as read as its chat is open 
       // when selecting a chat, mark all messages from that user as read and clear unread badge locally
