@@ -129,10 +129,23 @@ export const useAuthStore = create((set, get) => ({
 
   logout: async () => {
     try {
+      const { socket } = get();
+      
+      // Call logout API first
       await axiosInstance.post("/auth/logout");
-      set({ authUser: null });
+      
+      // Disconnect socket gracefully
+      if (socket?.connected) {
+        console.log("Disconnecting socket...");
+        socket.disconnect();
+        // Give server time to process disconnect
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // Clear auth state
+      set({ authUser: null, socket: null, onlineUsers: [] });
       toast.success("Logged out successfully");
-      get().disconnectSocket();
+      
     } catch (error) {
       toast.error(error.response?.data?.message || "Logout failed");
     }
@@ -193,6 +206,7 @@ export const useAuthStore = create((set, get) => ({
     
     // always listen for the online users and update it 
     newSocket.on("getOnlineUsers", (userIds) => {
+        console.log(`📊 Updated online users: ${JSON.stringify(userIds)}`);
         set({ onlineUsers: userIds });
     });
     
@@ -358,8 +372,8 @@ export const useAuthStore = create((set, get) => ({
   disconnectSocket: () => {
     const { socket } = get();
     if (socket?.connected) {
-      socket.removeAllListeners();
-      socket.disconnect();
+      socket.removeAllListeners(); // use to remove all the listener to this socket 
+      socket.disconnect(); // use to disconnect this socket
     }
     set({ socket: null, onlineUsers: [] });
   },

@@ -1,4 +1,4 @@
-// the best thing is always think in terms of the authUser and make state in keeping in mind that you are making the state for him alone now what can be state ok 
+// the best thing is always think in terms of the authUser and make state in keeping in mind that you are making the state for him alone ,, now what can be state ok 
 import {create} from "zustand"
 import toast from "react-hot-toast"
 import { axiosInstance } from "../lib/axios"

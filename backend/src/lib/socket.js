@@ -82,8 +82,11 @@ io.on("connection", async (socket) => {
     await addUserSocket(userId, socket.id);
     socket.userId = userId;
     const onlineUsers = await getOnlineUsers();
+    console.log(`✓ User ${userId} connected - Total online users: ${onlineUsers.length}`);
+    console.log(`  Online users: ${JSON.stringify(onlineUsers)}`);
     io.emit("getOnlineUsers", onlineUsers);
   } catch (error) {
+    console.error(`Connection error for user ${userId}:`, error);
     socket.emit("connection error", { message: "connection failed" });
   }
 
@@ -298,21 +301,24 @@ socket.on("call-ended", async ({ callId }) => {
 
  
   socket.on("disconnect", async () => {
-    console.log(`User disconnected: ${userId}, socketId: ${socket.id}`);
+    console.log(`User ${userId} disconnected, removing socket ${socket.id}`);
 
     try {
-       await removeUserSocket(socket.userId,socket.id);
+       // Remove the socket from Redis
+       await removeUserSocket(socket.userId, socket.id);
+       
+       // Check remaining sockets
        const remainingSockets = await getUserSockets(socket.userId);
+       console.log(`User ${userId} has ${remainingSockets.length} remaining sockets`);
+       
        if (remainingSockets.length === 0) {
-        console.log(`User ${socket.userId} is offline , all devices`);
+        console.log(`✓ User ${userId} is NOW OFFLINE - broadcasting to all users`);
 
+        // End any active calls
         for (const [callId, call] of activeCalls.entries()) {
           if (call.callerId === socket.userId || call.receiverId === socket.userId) {
-            console.log(`Auto-ending call ${callId} as `);
-
             const otherUserId = call.callerId === socket.userId ? call.receiverId : call.callerId;
             await emitToUser(otherUserId, "peer-disconnected", { callId, userId:socket.userId});
-
             cleanupCall(callId);
           }
         }
@@ -320,9 +326,11 @@ socket.on("call-ended", async ({ callId }) => {
         console.log(`User ${userId} still online on ${remainingSockets.length} other device(s)`);
       }
 
-      // Broadcast updated online users
+      // IMPORTANT: Broadcast updated online users to ALL connected clients
       const onlineUsers = await getOnlineUsers();
+      console.log(`📡 Broadcasting online users: ${JSON.stringify(onlineUsers)}`);
       io.emit("getOnlineUsers", onlineUsers);
+      
     } catch (error) {
       console.error("Error handling disconnect", error);
     }
