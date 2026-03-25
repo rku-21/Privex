@@ -1,4 +1,4 @@
-import { redis,addUserSocket,removeUserSocket,getUserSockets,getOnlineUsers } from "./redisPresence.js";
+import { redis,addUserSocket,removeUserSocket,getUserSockets,getOnlineUsers,refreshSocketPresence } from "./redisPresence.js";
 import "dotenv/config";
 import { Server } from "socket.io";
 import http from "http";
@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 import User from "../models/user.model.js";
 import {createAdapter} from "@socket.io/redis-adapter"
 import {MessageSocketEvents,emitMessageToUser} from "./message.Socket.js";
-import { send } from "process";
+
 
 const pubClient=redis;
 const subClient=redis.duplicate();
@@ -30,9 +30,11 @@ io.adapter(createAdapter(pubClient,subClient));
 
 const activeCalls = new Map();
 const callTimeouts = new Map();
+const socketHeartbeats = new Map(); // Track heartbeat intervals per socket
 
 const CALL_TIMEOUT_MS = 30000;
 const MAX_ICE_BUFFER_SIZE = 50;
+const TTL_REFRESH_INTERVAL_MS = 15000; // Refresh socket presence every 15 seconds
 
 /** 
  
@@ -81,6 +83,20 @@ io.on("connection", async (socket) => {
   try {
     await addUserSocket(userId, socket.id);
     socket.userId = userId;
+    
+    // Start heartbeat to refresh socket presence TTL every 15 seconds
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        await refreshSocketPresence(socket.id);
+        console.log(`✓ Socket ${socket.id} TTL refreshed (User: ${userId})`);
+      } catch(error) {
+        console.error(`Error refreshing socket ${socket.id}:`, error);
+      }
+    }, TTL_REFRESH_INTERVAL_MS);
+    
+    socketHeartbeats.set(socket.id, heartbeatInterval);
+    console.log(`✓ Heartbeat started for socket ${socket.id}`);
+    
     const onlineUsers = await getOnlineUsers();
     console.log(`✓ User ${userId} connected - Total online users: ${onlineUsers.length}`);
     console.log(`  Online users: ${JSON.stringify(onlineUsers)}`);
@@ -304,6 +320,13 @@ socket.on("call-ended", async ({ callId }) => {
     console.log(`User ${userId} disconnected, removing socket ${socket.id}`);
 
     try {
+       // Clear the heartbeat interval for this socket immediately
+       if(socketHeartbeats.has(socket.id)) {
+         clearInterval(socketHeartbeats.get(socket.id));
+         socketHeartbeats.delete(socket.id);
+         console.log(`✓ Heartbeat cleared for socket ${socket.id}`);
+       }
+       
        // Remove the socket from Redis
        await removeUserSocket(socket.userId, socket.id);
        
@@ -339,6 +362,19 @@ socket.on("call-ended", async ({ callId }) => {
 
 
 /**
+ * Cleanup all active heartbeat intervals
+ * Call this when server is shutting down
+ */
+function cleanupAllHeartbeats() {
+  socketHeartbeats.forEach((interval, socketId) => {
+    clearInterval(interval);
+    console.log(`✓ Cleared heartbeat for socket ${socketId}`);
+  });
+  socketHeartbeats.clear();
+  console.log(`✓ All heartbeats cleared`);
+}
+
+/**
  * 
  * @param {string} userId 
  * @returns {Promise<string|null>}
@@ -347,7 +383,8 @@ export async function getReceiverSocketId(userId) {
   const socketIds = await getUserSockets(userId);
   return socketIds[0] || null; // Return first device  socket ID
 }
-export { io, app, server };
+
+export { io, app, server, cleanupAllHeartbeats };
 
 
 

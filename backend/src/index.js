@@ -6,7 +6,7 @@ import { protectRoute } from './middleware/auth.protectRoute.js';
 import cors from "cors";
 import path from "path";
 // import { checkRedisHealth } from "./lib/redis.js";
-import {app, server} from "./lib/socket.js";
+import {app, server, cleanupAllHeartbeats} from "./lib/socket.js";
 const __dirname = path.resolve();
 const port = process.env.PORT || 5001;
 
@@ -95,6 +95,25 @@ if (!process.env.BREVO_API_KEY) {
  } else {
   console.log('email service configured');
 }
+
+// Graceful shutdown handlers
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  cleanupAllHeartbeats();
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  cleanupAllHeartbeats();
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
 
 server.listen(port, '0.0.0.0', async () => {
    console.log(`server is listening on ${port}`)
