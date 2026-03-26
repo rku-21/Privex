@@ -1,22 +1,16 @@
 import { getUserSockets } from "./redisPresence.js";
 
-// /**
-//  * Initialize all message-related socket events
-//  * @param {object} io - Socket.io server instance
-//  * @param {object} socket - Individual socket connection
-//  */
+/**
+ * @param {socket full server} io 
+ * @param {single auth user socket} socket 
+ */
 export function MessageSocketEvents(io, socket) {
-    /**
-     * Listen for typing indicator
-     * Emits "typing" event to receiver's active sockets when user starts typing
-     */
-    socket.on("typing", async ({ typerUserId, receiverUserId }) => {
+   socket.on("typing", async ({ typerUserId, receiverUserId }={}) => {
         try {
             const typingUserId = typerUserId || socket.userId;
             const receiveingUserId = receiverUserId;
 
             if (!typingUserId || !receiveingUserId) {
-                console.warn("Invalid user Ids");
                 return;
             }
             const receiverSockets = await getUserSockets(receiveingUserId);
@@ -33,16 +27,16 @@ export function MessageSocketEvents(io, socket) {
     });
 
     /**
-     * Listen for stop typing indicator
-     * Emits "stopTyping" event to receiver's active sockets when user stops typing
+     * @param {typerId} 
+     * @param {receiverId}
+     * // emit the stop typing event to receiver's online socket
      */
-    socket.on("stopTyping", async ({ typerUserId, receiverUserId }) => {
+    socket.on("stopTyping", async ({ typerUserId, receiverUserId }={}) => {
         try {
             const typingUserId = typerUserId || socket.userId;
             const receiveingUserId = receiverUserId;
 
             if (!typingUserId || !receiveingUserId) {
-                console.warn("Invalid user IDs");
                 return;
             }
             const receiverSocketIds = await getUserSockets(receiveingUserId);
@@ -56,7 +50,7 @@ export function MessageSocketEvents(io, socket) {
 
             }
         } catch (error) {
-            socket.emit("stopTyping-error", { message: "error to emit stopTyping" });
+            socket.emit("stopTyping-error", { message: "error to emit stopTyping event" });
         }
     });
 
@@ -67,7 +61,6 @@ export function MessageSocketEvents(io, socket) {
     socket.on("message-read-status", async ({ chatId, receiverId, senderId }) => {
         try {
             if (!chatId || !receiverId || !senderId) {
-                console.warn("Invalid parameters for message read status");
                 return;
             }
             
@@ -80,7 +73,7 @@ export function MessageSocketEvents(io, socket) {
                         status: "seen" 
                     });
                 });
-                console.log(`Sent read status to sender ${senderId}`);
+                // here the flow is sender sended message to reciver now receiver have seen it so emiting the read status to sender of message
             }
         } catch (error) {
             socket.emit("read-status-error", { message: "error in sending read status" });
@@ -99,7 +92,6 @@ export function MessageSocketEvents(io, socket) {
 export async function emitMessageToUser(io, userId, event, payload) {
     try {
         const socketIds = await getUserSockets(userId);
-        // if user is offline
         if (socketIds.length === 0) {
             return false;
         }
@@ -108,11 +100,8 @@ export async function emitMessageToUser(io, userId, event, payload) {
         socketIds.forEach((socketId) => {
             io.to(socketId).emit(event, payload);
         });
-
-        console.log(`Message event "${event}" sent to user ${userId}`);
         return true;
     } catch (error) {
-        console.error(`Error emitting message event to user ${userId}:`, error);
         return false;
     }
 }
