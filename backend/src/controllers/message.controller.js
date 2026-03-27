@@ -290,3 +290,37 @@ export const markMessagesAsRead = async (req, res) => {
     });
   }
 }
+
+export const getUnreadMessages=async(req,res)=>{
+  try {
+    const userId=req.user._id;
+    if(!userId) res.status(400).json({message:"not a valid user"});
+
+    const result= await Message.aggregate([
+      {
+        $match:{
+          receiverId:userId,
+          read:false
+        }
+
+      },
+      {
+        $group:{
+          _id:"$senderId",
+          count:{$sum:1}
+        }
+      }
+    ]);
+    const unreadMap={};
+    for(const item of result){
+      unreadMap[item._id]=item.count;
+    }
+    res.status(200).json({
+      unreadMap:unreadMap,
+    });
+    
+
+  }catch(error){
+
+  }
+}
