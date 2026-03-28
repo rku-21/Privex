@@ -13,21 +13,13 @@ import { Sidebar } from "../components/sidebar/Sidebar.jsx"
 import { useThemeStore } from "../store/useThemeStore";
 import { useAuthStore } from "../store/useAuthStore";
 
+
 export const Home = () => {
-  const { selectedUser, setselectedUser, SubscribeToMessages, unsubscribeToMessages } = useChatStore();
-  const { socket } = useAuthStore();
+  const { selectedUser, setselectedUser, getAllunreadMessages } = useChatStore();
   const { theme } = useThemeStore();
   const location = useLocation();
-
-
-
-  useEffect(() => {
-    if (!socket) return;
-    SubscribeToMessages();
-    return () => unsubscribeToMessages();
-  }, [socket, SubscribeToMessages, unsubscribeToMessages]);
-
-
+  
+  
   useEffect(() => {
     if (location.state?.directCall && location.state?.callerId) {
       const callerFromState = location.state?.caller;

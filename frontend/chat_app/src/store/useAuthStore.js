@@ -90,6 +90,7 @@ export const useAuthStore = create((set, get) => ({
       const res = await axiosInstance.post("/auth/login", data);
       set({ authUser: res.data });
       toast.success("Logged in Successfully");
+     
       get().connectSocket();
     } catch (error) {
       toast.error(error.response?.data?.message || "Login failed");
@@ -186,6 +187,12 @@ export const useAuthStore = create((set, get) => ({
       console.log(`Socket connected with ID: ${newSocket.id}`);
 
       newSocket.emit("user-online",authUser._id);
+      
+      // Subscribe to messages after socket connects - persists across all routes
+      useChatStore.getState().SubscribeToMessages();
+      
+      // Fetch all unread messages (including those received while offline)
+      useChatStore.getState().getAllunreadMessages();
     });
 
     

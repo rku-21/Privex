@@ -4,6 +4,7 @@ import toast from "react-hot-toast"
 import { axiosInstance } from "../lib/axios"
 import {useAuthStore} from "./useAuthStore"
 import { useQueryPagination } from "./useQueryPagination"
+import { AudioWaveform } from "lucide-react"
 
 const appendUniqueMessage = (messages, newMessage) => {
   if (messages.some((message) => message._id === newMessage._id)) {
@@ -60,7 +61,7 @@ export const useChatStore=create((set,get)=>({
       }));
       if (isAlreadyAcked) {
         set((state) => {
-          const nextAcked = { ...state.ackedMessageIds };
+          const nextAcked = { ...state.ackedMessageIds }; // create a copy 
           delete nextAcked[ackId];
           return { ackedMessageIds: nextAcked };
         });
@@ -245,6 +246,17 @@ export const useChatStore=create((set,get)=>({
       }catch(error){
         toast.error(error.response?.data?.message || "Failed to mark messages as read");
       }
+    },
+
+    getAllunreadMessages: async()=>{
+      // as the user login and land to home page find all unread messages for him to show on screen as badge 
+      try{
+        const res= await  axiosInstance.get(`/messages/unreadmessages`);
+        set({unreadCounts:res.data.unreadMap});
+      }catch(error){
+         toast.error("Error occur in loading the unreadMessages");
+      }
+
     },
 
 

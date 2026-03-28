@@ -294,29 +294,27 @@ export const markMessagesAsRead = async (req, res) => {
 export const getUnreadMessages=async(req,res)=>{
   try {
     const userId=req.user._id;
-    if(!userId) res.status(400).json({message:"not a valid user"});
+    const userIdString = userId.toString();
+    
+    if(!userId) return res.status(400).json({message:"not a valid user"});
 
-    const result= await Message.aggregate([
-      {
-        $match:{
-          receiverId:userId,
-          read:false
-        }
+    // Get all unread messages where this user is the receiver
+    // Since chatId is [senderId, receiverId].sort().join('_'), we need to filter by chatId pattern
+    const unreadMessages = await Message.find({
+      chatId: { $regex: userIdString },
+      read: false,
+      senderId: { $ne: userId }  // Exclude messages sent by the user
+    });
 
-      },
-      {
-        $group:{
-          _id:"$senderId",
-          count:{$sum:1}
-        }
-      }
-    ]);
-    const unreadMap={};
-    for(const item of result){
-      unreadMap[item._id]=item.count;
+    // Group by senderId to count unread messages from each user
+    const unreadMap = {};
+    for (const message of unreadMessages) {
+      const senderId = message.senderId.toString();
+      unreadMap[senderId] = (unreadMap[senderId] || 0) + 1;
     }
+
     res.status(200).json({
-      unreadMap:unreadMap,
+      unreadMap: unreadMap,
     });
     
 

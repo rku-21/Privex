@@ -8,3 +8,4 @@ backend/.env
 frontend/chat_app/src/components/assistant/NoChatAssistant.jsx
 frontend/chat_app/src/components/assistant/NoFriendsAssistant.jsx
 frontend/chat_app/src/store/useCallStore_OLD_BACKUP.js
+/UNREAD_MESSAGES_IMPLEMENTATION.md
