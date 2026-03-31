@@ -1,10 +1,13 @@
 // the best thing is always think in terms of the authUser and make state in keeping in mind that you are making the state for him alone ,, now what can be state ok 
 import {create} from "zustand"
 import toast from "react-hot-toast"
+import { showMessageToast } from "../components/notification/messageNotification.jsx"
+
 import { axiosInstance } from "../lib/axios"
 import {useAuthStore} from "./useAuthStore"
 import { useQueryPagination } from "./useQueryPagination"
-import { AudioWaveform } from "lucide-react"
+
+
 
 const appendUniqueMessage = (messages, newMessage) => {
   if (messages.some((message) => message._id === newMessage._id)) {
@@ -32,7 +35,7 @@ export const useChatStore=create((set,get)=>({
           _id: tempId,
           senderId: authUser._id,
           receiverId:selectedUser._id,
-          chatId: chatId,  // ✅ Add chatId to temp message
+          chatId: chatId,  
           text:messageData.text,
           image:messageData.image||null,
           status:"sending",
@@ -82,29 +85,37 @@ export const useChatStore=create((set,get)=>({
     if (!socket) {
         return;
     }
+   
     socket.off("newMessage");
     socket.off("message-sent-Ack");
 
     // listen for the new messages 
     socket.on("newMessage", (newMessage) => {
+     
       const { selectedUser } = get();
 
       //just for the safety wheater the user is online or not 
       const currentUserId = String(useAuthStore.getState().authUser?._id || "");
-      if (!currentUserId) return;
+      
+      if (!currentUserId) {
+       
+        return;
+      }
 
       // is the currentUserid match any then user is involve in this message 
       const [userId1, userId2] = (newMessage.chatId || "").split("_");
       const isMessageForMe = userId1 === currentUserId || userId2 === currentUserId;
+     
       
       // if the user is not involve in this message just return 
       if (!isMessageForMe) {
-         return;
+        return;
       }
 
       // get teh sendrId & check currentUser is sender ?? 
       const messageSenderId = String(newMessage.senderId);
       const isFromMe = messageSenderId === currentUserId;
+     
 
       // get the selecteduserId
       const selectedUserId = typeof selectedUser === "string" ? selectedUser : selectedUser?._id;
@@ -115,30 +126,48 @@ export const useChatStore=create((set,get)=>({
         !!selectedUserId &&
         [currentUserId, String(selectedUserId)].sort().join("_") === newMessage.chatId;
       
+      
 
       // if current chat open add message to current chat uniquely 
       if (isCurrentChatOpen) {
+        
         useQueryPagination.setState((state) => ({
           messages: appendUniqueMessage(state.messages, newMessage),
         }));
         
         // as chat is open mark the message is read instantly (this can be bottleneck)
         if (!isFromMe) {
+         
           axiosInstance.post(`/messages/${messageSenderId}/read`)
             .catch(err => console.error("Error marking message as read:", err));
         }
         return;
       }
+      
 
       //now the case that chat is not open 
-      // if the chat not open and some one send message to me increase the count for that particular user 
-      if (!isFromMe) {
+      // if the chat not open and some one send message to me increase the count for that particular user , also show enrichedMessage
+      if (!isFromMe && !isCurrentChatOpen) {
+       
+        // Look up sender's fullname from friends list
+        const friends = useQueryPagination.getState().friends || [];
+       
+        const senderFriend = friends.find((friend) => String(friend._id) === messageSenderId);
+       
+        const enrichedMessage = {
+          ...newMessage,
+          senderId:senderFriend?._id,
+          senderName: senderFriend?.fullname,
+          senderProfilePicture: senderFriend?.profilePicture || "",
+        };
+        showMessageToast(enrichedMessage);
        set((state) => ({
           unreadCounts: {
             ...state.unreadCounts,
             [messageSenderId]: (state.unreadCounts?.[messageSenderId] || 0) + 1,
           },
         }));
+       
       }
     });
 
@@ -225,27 +254,21 @@ export const useChatStore=create((set,get)=>({
       const authUser = useAuthStore.getState().authUser;
       const socket = useAuthStore.getState().socket;
 
-      // if (socket && authUser) {
-      //   socket.emit("message-seen-Ack", {
-      //     receiver: selectedUser,
-      //     sender: authUser
-      //   });
-      // }
-
-      // for now the marking is done using http but its bottle neck use socket event to do so 
-
-      // mark this selectedUser all unread messages as read as its chat is open 
+      // for now the marking is done using http but its bottle neck use socket event to do so // mark this selectedUser all unread messages as read as its chat is open 
       // when selecting a chat, mark all messages from that user as read and clear unread badge locally
       try {
          await axiosInstance.post(`/messages/${selectedUserId}/read`);
          set((state) => {
            const newCounts = { ...state.unreadCounts }; // make a copy 
-           delete newCounts[selectedUserId];//delete unread of selecteduser and return !
+           delete newCounts[selectedUserId];
            return { unreadCounts: newCounts };
          });
       }catch(error){
         toast.error(error.response?.data?.message || "Failed to mark messages as read");
       }
+
+      
+      
     },
 
     getAllunreadMessages: async()=>{

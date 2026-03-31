@@ -298,15 +298,14 @@ export const getUnreadMessages=async(req,res)=>{
     
     if(!userId) return res.status(400).json({message:"not a valid user"});
 
-    // Get all unread messages where this user is the receiver
-    // Since chatId is [senderId, receiverId].sort().join('_'), we need to filter by chatId pattern
+    
     const unreadMessages = await Message.find({
       chatId: { $regex: userIdString },
       read: false,
-      senderId: { $ne: userId }  // Exclude messages sent by the user
+      senderId: { $ne: userId }  
     });
 
-    // Group by senderId to count unread messages from each user
+  
     const unreadMap = {};
     for (const message of unreadMessages) {
       const senderId = message.senderId.toString();
