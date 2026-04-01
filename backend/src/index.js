@@ -7,7 +7,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { checkRedisHealth } from "./lib/redis.js";
+// import { checkRedisHealth } from "./lib/redis.js";
 import {app, server, cleanupAllHeartbeats} from "./lib/socket.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = process.env.PORT || 5001;
@@ -42,7 +42,7 @@ app.use("/api/friends", friendsRoutes);
 // Health check
 app.get("/api/health", async (req, res) => {
   try {
-    const redisHealth = await checkRedisHealth();
+    // const redisHealth = await checkRedisHealth();
     const emailConfigured = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
     
     res.status(200).json({
