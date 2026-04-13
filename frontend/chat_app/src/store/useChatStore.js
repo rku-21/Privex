@@ -44,15 +44,18 @@ export const useChatStore=create((set,get)=>({
         useQueryPagination.setState((state) => ({
           messages: [...state.messages, tempMessage],
         }));
+        const sendAt=Date.now();
 
     try {
       const res = await axiosInstance.post(
         `/messages/send/${selectedUser._id}`,
-        messageData,
+         {...messageData, sendAt},
         {
           headers: socket?.id ? { "x-socket-id": socket.id } : undefined,
-        }
+        },
+
       );
+      
       const ackId = String(res.data?._id || "");
       const isAlreadyAcked = !!get().ackedMessageIds[ackId];
       useQueryPagination.setState((state) => ({
@@ -91,6 +94,7 @@ export const useChatStore=create((set,get)=>({
 
     // listen for the new messages 
     socket.on("newMessage", (newMessage) => {
+      console.log(`latency in ms is ${Date.now()-newMessage.sendAt}`);
      
       const { selectedUser } = get();
 
@@ -136,9 +140,11 @@ export const useChatStore=create((set,get)=>({
         }));
         
         // as chat is open mark the message is read instantly (this can be bottleneck)
+
         if (!isFromMe) {
+          const seenAt=Date.now();
          
-          axiosInstance.post(`/messages/${messageSenderId}/read`)
+          axiosInstance.post(`/messages/${messageSenderId}/read`,{seenAt})
             .catch(err => console.error("Error marking message as read:", err));
         }
         return;
@@ -195,6 +201,7 @@ export const useChatStore=create((set,get)=>({
     // Listen for message seen acknowledgment (double tick)
     socket.on("message-seen-Ack", (data) => {
       if (!data?.senderId || !data?.chatId) return;
+      console.log("read-Ack latency is ",Date.now()-data.seenAt);
       
       const { senderId, chatId } = data;
       const currentUserId = String(useAuthStore.getState().authUser?._id || "");

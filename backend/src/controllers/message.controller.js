@@ -132,11 +132,12 @@ export const getMessagesBetweenUsers = async (req, res) => {
     if (cursor) {
       query.createdAt = { $lt: new Date(cursor) };
     }
-
+    const start=Date.now();
     const messages = await Message.find(query)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit) + 1);
-
+    const duration=Date.now()-start;
+    console.log("cursor query in ms = ",duration);
     const hasMore = messages.length > limit;
     const result = messages.slice(0, limit).reverse();
     const nextCursor = hasMore ? messages[limit - 1].createdAt : null;
@@ -144,7 +145,8 @@ export const getMessagesBetweenUsers = async (req, res) => {
     res.status(200).json({
       messages: result,
       nextCursor,
-      hasMore
+      hasMore,
+      durationMs:duration,
     });
   } catch (error) {
     return res.status(500).json({ message: "Internal server error", error });
@@ -154,7 +156,7 @@ export const getMessagesBetweenUsers = async (req, res) => {
 // when client send the message by http , method take it save to db and emit message to the other client 
 export const sendMessges = async (req, res) => {
   try {
-    const { text, image, video } = req.body;
+    const { text, image, video, sendAt } = req.body;
     const senderId = req.user._id;
     const receiverId = req.params.id;
 
@@ -203,6 +205,11 @@ export const sendMessges = async (req, res) => {
 
     await newMessage.save();
 
+    const emittedMessage = {
+      ...newMessage.toObject(),
+      sendAt: sendAt || Date.now(),
+    };
+
     // socket id of the tab/device that initiated this HTTP request
     const senderSocketIdHeader = req.headers["x-socket-id"];
     const activeSenderSocketId = Array.isArray(senderSocketIdHeader)
@@ -217,25 +224,25 @@ export const sendMessges = async (req, res) => {
 
     if (otherSenderSocketIds.length > 0) {
       otherSenderSocketIds.forEach((socketId) => {
-        io.to(socketId).emit("newMessage", newMessage);
+        io.to(socketId).emit("newMessage", emittedMessage);
       });
     }
 
     // Always ack sender devices after DB save, even if receiver is offline.
     if (senderSocketIds.length > 0) {
       senderSocketIds.forEach((socketId) => {
-        io.to(socketId).emit("message-sent-Ack", newMessage);
+        io.to(socketId).emit("message-sent-Ack", emittedMessage);
       });
     }
 
     // Emit message to receiver using new message socket utility
-    const receiverIsOnline = await emitMessageToUser(io, receiverId, "newMessage", newMessage);
+    const receiverIsOnline = await emitMessageToUser(io, receiverId, "newMessage", emittedMessage);
     
     if (!receiverIsOnline) {
       console.log(`Receiver ${receiverId} is offline - message saved to DB for later delivery`);
     }
 
-    res.status(201).json(newMessage);
+    res.status(201).json(emittedMessage);
   } catch (error) {
     console.error("Error sending message", error);
     res.status(500).send({ message: "Internal server error" });
@@ -246,6 +253,7 @@ export const sendMessges = async (req, res) => {
 // Mark message as Read when user open the chat 
 export const markMessagesAsRead = async (req, res) => {
   try {
+    const {seenAt}=req.body;
     const receiverId = req.user._id;
     const senderId = req.params.id;
 
@@ -275,7 +283,8 @@ export const markMessagesAsRead = async (req, res) => {
         receiverId: receiverId._id,
         senderId: senderId,
         chatId: chatId,
-        markedCount: result.modifiedCount
+        markedCount: result.modifiedCount,
+        seenAt,
       });
     }
 
@@ -321,3 +330,25 @@ export const getUnreadMessages=async(req,res)=>{
 
   }
 }
+
+
+// deep page query performance (latency mesurements)
+
+export const getMessagesSkip=async(req,res)=>{
+  const myId=req.user._id;
+  const userTochatId=req.params.id;
+  console.log("hello i am here");
+
+   const {skip=0 , limit=50}=req.query;
+
+   const chatId=[myId.toString(),userTochatId].sort().join("_");
+
+   const start=Date.now();
+   const messages=await Message.find({chatId}).sort({createdAt:-1}).skip(parseInt(skip)).limit(parseInt(limit));
+   const msg="skip/lmit qury ms";
+   const duration=Date.now()-start;
+   console.log("skip/limt query ms=",duration);
+   res.status(200).json({msg,durationMs:duration});
+
+
+};
