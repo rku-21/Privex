@@ -21,18 +21,41 @@ import { testEmailService } from './lib/emailService.js';
 
 
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
+
+const devCorsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
     origin: process.env.NODE_ENV === "production" 
       ? true
-      : ["http://localhost:5173","http://localhost:5174"],
+      : (devCorsOrigins.length ? devCorsOrigins : true),
     credentials: true,
   })
 );
+
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(
+      JSON.stringify({
+        method: req.method,
+        url: req.originalUrl,
+        status: res.statusCode,
+        durationMs: duration,
+      })
+    );
+  });
+
+  next();
+});
 
 // API routes 
 app.use("/api/auth", authRoutes);

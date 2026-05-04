@@ -27,6 +27,19 @@ export const useChatStore=create((set,get)=>({
     const socket = useAuthStore.getState().socket;
     const authUser = useAuthStore.getState().authUser;
 
+          const mediaDataUrl = messageData?.media;
+          let image = messageData?.image ?? null;
+          let video = messageData?.video ?? null;
+
+          // Back-compat: if caller sends `media` instead of `image`/`video`, infer type.
+          if (mediaDataUrl && !image && !video) {
+            if (String(mediaDataUrl).startsWith("data:video/")) {
+              video = mediaDataUrl;
+            } else {
+              image = mediaDataUrl;
+            }
+          }
+
         const  tempId=Date.now().toString();
         // Calculate chatId same way as backend
         const chatId = [authUser._id.toString(), selectedUser._id].sort().join('_');
@@ -37,7 +50,8 @@ export const useChatStore=create((set,get)=>({
           receiverId:selectedUser._id,
           chatId: chatId,  
           text:messageData.text,
-          image:messageData.image||null,
+          image,
+          video,
           status:"sending",
           createdAt: new Date().toISOString(),
         };
@@ -288,6 +302,21 @@ export const useChatStore=create((set,get)=>({
       }
 
     },
+
+    // deleting the messages 
+    deleteMessageById:async(chatId)=>{
+      try{
+        const res=await axiosInstance.delete(`/messages/${chatId}`);
+        toast.success("message Deleted");
+      }catch(error){
+        toast.error("error in deleting the messages");
+      }
+    },
+
+
+
+
+
 
 
 

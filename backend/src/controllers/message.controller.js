@@ -6,6 +6,7 @@ import { getReceiverSocketId, io } from '../lib/socket.js';
 import { getUserSockets } from '../lib/redisPresence.js';
 import { emitMessageToUser, broadcastMessageEvent } from '../lib/message.Socket.js';
 import mongoose from 'mongoose';
+import { json } from 'express';
 
 
 // function to return the all user at once except the authUser itself (very bad when large user)
@@ -327,6 +328,10 @@ export const getUnreadMessages=async(req,res)=>{
     
 
   }catch(error){
+     res.status(500).json({
+      message:"internal server error",
+      error:error.message,
+    })
 
   }
 }
@@ -351,4 +356,31 @@ export const getMessagesSkip=async(req,res)=>{
    res.status(200).json({msg,durationMs:duration});
 
 
+};
+
+// delete message by id (only sender can delete their own message)
+export const deleteMessageById = async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const userId = req.user._id;
+
+    const msg = await Message.findOneAndDelete({
+      _id: messageId,
+      senderId: userId,
+    });
+
+    if (!msg) {
+      return res.status(404).json({ message: "Message not found or not authorized" });
+    }
+
+    return res.status(200).json({
+      message: "Message deleted successfully",
+      msg,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
 };

@@ -12,7 +12,7 @@ const serverPort = params.get("server");
 
 const BASE_URL =
   import.meta.env.MODE === "development"
-    ? `http://localhost:${serverPort || 5001}`
+    ? `${window.location.protocol}//${window.location.hostname}:${serverPort || 5001}`
     : "/";
 
 const normalizeTyperUserId = (payload) => {
@@ -174,9 +174,8 @@ export const useAuthStore = create((set, get) => ({
     const newSocket = io(BASE_URL, {
       query: { userId: authUser._id },
       reconnection: true,
-      transports: ['websocket'],
+      transports: ["websocket", "polling"],
       withCredentials: true,
-      secure: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 20000

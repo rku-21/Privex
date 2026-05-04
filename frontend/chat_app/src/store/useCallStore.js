@@ -204,6 +204,8 @@ export const useCallStore = create((set, get) => ({
 
 
   initiateCall: async (receiverId, callType) => {
+    // console.log(`starting call--> at ${Date.now()}`);
+    const callStart=Date.now();
     const socket = useAuthStore.getState().socket;
 
 
@@ -232,7 +234,7 @@ export const useCallStore = create((set, get) => ({
       const constraints = callType === "video" ? { video: true, audio: true } : { audio: true };
       const localStream = await navigator.mediaDevices.getUserMedia(constraints);
       set({ localStream });
-      console.log("Local stream obtained:", localStream);
+      // console.log("Local stream obtained:", localStream);
       localStream.getTracks().forEach(track => {
         pc.addTrack(track, localStream);
       });
@@ -274,7 +276,7 @@ export const useCallStore = create((set, get) => ({
             }, 1000);
           }
         } else if (pc.iceConnectionState === 'connected') {
-          console.log("Media connected");
+          // console.log("Media connected");
         }
       };
 
@@ -296,7 +298,7 @@ export const useCallStore = create((set, get) => ({
         if (event.candidate) {
           const { currentCallId, pendingIce } = get();
           if (!currentCallId) {
-            if (pendingIce.length < 20) {
+            if (pendingIce?.length < 20) {
               pendingIce.push(event.candidate);
               set({ pendingIce: [...pendingIce] });
             }
@@ -319,6 +321,7 @@ export const useCallStore = create((set, get) => ({
         offer: offer,
         callType: callType,
         from: useAuthStore.getState().authUser._id,
+        callStart:callStart,
       });
       const chatState = useChatStore.getState();
       const selectedUser = chatState.selectedUser;
@@ -334,6 +337,7 @@ export const useCallStore = create((set, get) => ({
           profilePicture: targetUser?.profilePicture || "/avatar.png"
         }
       });
+       console.log(`call connected in durationMs ${Date.now()-parseInt(callStart)}`);
 
     } catch (error) {
       toast.error("Error initiating call");
@@ -350,7 +354,7 @@ export const useCallStore = create((set, get) => ({
       return Promise.reject("No incoming call to accept");
     }
 
-    const { callId, from, offer, callType } = incomingCall;
+    const { callId, from, offer, callType,callStart } = incomingCall;
     const callerId = typeof from === 'object' && from !== null ? from._id : from;
 
     try {
@@ -476,6 +480,7 @@ export const useCallStore = create((set, get) => ({
       socket.emit("answer-call", {
         callId: callId,
         answer: answer,
+        
       });
 
 
@@ -487,6 +492,7 @@ export const useCallStore = create((set, get) => ({
         isCallAccepted: true,
         isInitiating: false
       });
+     
       toast.success("Call connected");
       return Promise.resolve();
 

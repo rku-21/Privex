@@ -8,6 +8,13 @@ import {createAdapter} from "@socket.io/redis-adapter"
 import {MessageSocketEvents,emitMessageToUser} from "./message.Socket.js";
 import { activeCalls} from "./call.socket.js";
 
+const devCorsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const allowAnyOrigin = (origin, callback) => callback(null, true);
+
 const pubClient=redis;
 const subClient=redis.duplicate();
 
@@ -19,7 +26,12 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.NODE_ENV === "production" ? true : "http://localhost:5173",
+    origin:
+      process.env.NODE_ENV === "production"
+        ? true
+        : devCorsOrigins.length
+          ? devCorsOrigins
+          : allowAnyOrigin,
     credentials: true,
   },
   pingTimeout: 60000,
