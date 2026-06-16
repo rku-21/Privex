@@ -30,11 +30,17 @@ jobs:
     needs: test               # only runs if "test" job succeeds
     runs-on: ubuntu-latest
     steps:
+      - name: Normalize SSH username
+        id: ssh-user
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: echo "username=$(printf '%s' "$SSH_USER" | xargs)" >> "$GITHUB_OUTPUT"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          username: ${{ steps.ssh-user.outputs.username }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/privex
