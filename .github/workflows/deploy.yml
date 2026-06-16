@@ -40,5 +40,5 @@ jobs:
             cd ~/privex
             git pull origin main
             cd backend && npm install --production && cd ..
-            cd frontend/chat_app && npm install && npm run build && cd ..
+            cd frontend/chat_app && npm install && npm run build && cd ../..
             pm2 restart privex
