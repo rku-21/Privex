@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./lib/env.js";
 import express from 'express';
 import { connectDB } from './lib/db.js';
 import cookieParser from 'cookie-parser';

@@ -1,6 +1,5 @@
 import { redis,addUserSocket,removeUserSocket,getUserSockets,getOnlineUsers,refreshSocketPresence } from "./redisPresence.js";
 import { CallsocketEvents}  from "./call.socket.js";
-import "dotenv/config";
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
