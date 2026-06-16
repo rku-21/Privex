@@ -30,13 +30,27 @@ jobs:
     needs: test               # only runs if "test" job succeeds
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Deploy via SSH (key)
+        if: ${{ secrets.SSH_PRIVATE_KEY != '' || secrets.SSH_KEY != '' }}
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST || secrets.HOST }}
-          username: ${{ secrets.SSH_USER || secrets.SSH_USERNAME || secrets.USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY || secrets.SSH_KEY }}
+          host: ${{ secrets.SSH_HOST != '' && secrets.SSH_HOST || secrets.HOST }}
+          username: ${{ secrets.SSH_USER != '' && secrets.SSH_USER || (secrets.SSH_USERNAME != '' && secrets.SSH_USERNAME || secrets.USERNAME) }}
+          key: ${{ secrets.SSH_PRIVATE_KEY != '' && secrets.SSH_PRIVATE_KEY || secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            cd ~/privex
+            git pull origin main
+            cd backend && npm install --production && cd ..
+            cd frontend/chat_app && npm install && npm run build && cd ../..
+            pm2 restart privex
+
+      - name: Deploy via SSH (password)
+        if: ${{ secrets.SSH_PRIVATE_KEY == '' && secrets.SSH_KEY == '' && secrets.SSH_PASSWORD != '' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST != '' && secrets.SSH_HOST || secrets.HOST }}
+          username: ${{ secrets.SSH_USER != '' && secrets.SSH_USER || (secrets.SSH_USERNAME != '' && secrets.SSH_USERNAME || secrets.USERNAME) }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             cd ~/privex
