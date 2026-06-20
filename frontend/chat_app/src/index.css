@@ -2,13 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-
-html {
-  background: #111827;
-  color-scheme: dark;
+:root {
+  --color-bg: #f5f4f9;
+  --color-surface: #ffffff;
+  --color-text: #1a1a24;
+  --color-muted: #6b6d80;
+  --color-border: #d5d5d8;
+  --color-accent-start: #8b5cf6;
+  --color-accent-end: #ec4899;
+  --color-avatar-bg: #d8d8e3;
+  --color-hover: #ecebf2;
+   --color-accent: #8b5cf6;
+   --color-toggle-off: #d1d5db;
 }
 
-body {
+
+
+
+.dark-mode {
+  --color-bg: #10111c;
+  --color-surface: #1c1e2e;
+  --color-text: #ffffff;
+  --color-muted: #8b8fa3;
+  --color-border: #23253a;
+  --color-accent-start: #8b5cf6;
+  --color-accent-end: #ec4899;
+  --color-avatar-bg: #3a3d52;
+   --color-hover: #262838;
+   --color-accent: #a78bfa;
+  --color-toggle-off: #4b5563;
+}
+
+
+/* html {
+  background: #111827;
+  color-scheme: dark;
+} */
+
+/* body {
   background: #111827;
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -16,9 +47,9 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   color: #fff;
-}
+} */
 
-#root {
+/* #root {
   background: #111827;
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -26,7 +57,7 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   height: 100%;
-}
+} */
 
 
 @keyframes slideDown {

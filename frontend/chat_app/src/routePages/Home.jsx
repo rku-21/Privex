@@ -28,22 +28,21 @@ export const Home = () => {
   }, [location.state, setselectedUser]);
 
   return (
-    <div className={`parent${theme === "dark" ? " dark-mode" : ""} `}>
-      <Navbar />
-      <div
-        className={`flex w-full ${theme === "dark" ? "dark-mode" : ""
-          } ${selectedUser ? "h-[100vh] md:h-[calc(100vh-130px)]" : "h-[calc(100vh-130px)]"}`}
-      >
-        <Sidebar />
-        <div className="flex-1 min-w-0 h-full relative">
-          {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
-        </div>
+  <div className={`parent bg-bg ${theme === "dark" ? "dark-mode" : ""}`}>
+    <Navbar />
+    <div
+      className={`flex w-full ${
+        selectedUser ? "h-[100vh] md:h-[calc(100vh-130px)]" : "h-[calc(100vh-130px)]"
+      }`}
+    >
+      <Sidebar />
+      <div className="flex-1 min-w-0 h-full relative">
+        {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
       </div>
-
-
-      {<BottomNavbar />}
     </div>
-  );
+    <BottomNavbar />
+  </div>
+);
 };
 
 

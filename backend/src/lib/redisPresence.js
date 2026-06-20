@@ -1,12 +1,17 @@
 import { createClient } from "redis";
+console.log("REDIS_URL =", process.env.REDIS_URL);
 export const redis=createClient({
     url:process.env.REDIS_URL,
 });
 
+
 redis.on("error",(err)=>{
     console.log(`redis Error ${err}`);
+    // console.log(err.stack);
+    // console.log(err);
 })
 await redis.connect();
+console.log("redis connection establisehed");
 
 // TTL configuration to avoid Ghost Sockets 
 const SOCKET_TTL_SECONDS = 30; // removed the socket after 30 sec

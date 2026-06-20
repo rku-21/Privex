@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Send, Phone, Video, Paperclip, X, Check, LoaderCircle } from "lucide-react";
+import { Send, Phone, Video, Paperclip, X, Check, LoaderCircle,CircleX} from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useQueryPagination } from "../../store/useQueryPagination";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -269,8 +269,7 @@ const ChatContainer = () => {
 
   return (
     <div
-      className={`flex-1 min-w-0 h-full flex flex-col transition-colors duration-300 ${
-        theme === "dark" ? "bg-gray-900" : "bg-white"
+      className={`flex-1 min-w-0 h-full flex flex-col transition-colors duration-300 bg-bg"
       }`}
     >
       {showMenu && (
@@ -285,7 +284,7 @@ const ChatContainer = () => {
 
       {/* Header */}
       <div
-        className={`sticky top-0 z-40 backdrop-blur-xl border-b border-gray-200/50 p-4 shadow-sm ${
+        className={`sticky top-0 z-40 backdrop-blur-xl border-b border-border p-4 shadow-sm ${
           theme === "dark" ? "bg-gray-800" : "bg-gray-100"
         }`}
       >
@@ -362,15 +361,11 @@ const ChatContainer = () => {
 
             {/* CLOSE CHAT */}
             <button
-              className="p-3 hover:bg-gray-600 rounded-full transition-all duration-200 hover:scale-90"
+               className={`p-3 rounded-full transition-all duration-200 hover:scale-110 ${theme=='dark'?'dark:hover:bg-gray-700':'hover:bg-gray-200'}`}
               onClick={handleCloseChat}
               title="Close chat"
             >
-              <i
-                className={`fa-regular fa-circle-xmark text-2xl ${
-                  theme === "dark" ? "fill-white" : ""
-                }`}
-              ></i>
+            <CircleX className={`${theme=='dark'?'text-white':'text-black '}`} />
             </button>
           </div>
         </div>
@@ -378,9 +373,9 @@ const ChatContainer = () => {
 
       {/* MESSAGES */}
       <div
-        className={`flex-1 min-h-0 ${
+        className={`flex-1  min-h-0 ${
           imagePreview ? "overflow-hidden p-0" : "overflow-y-auto p-6"
-        } ${theme === "dark" ? "bg-stone-900" : "bg-gray-50"}`}
+        } ${theme === "dark" ? "bg-stone-900" : "bg-gray-300"}`}
       >
         {imagePreview ? (
           <div className="relative w-full h-full flex items-center justify-center">
@@ -413,13 +408,16 @@ const ChatContainer = () => {
                   message.senderId === authUser._id ? "justify-end" : "justify-start"
                 }`}
               >
-                <div
-                  className={`w-auto px-4 py-3 rounded-2xl relative group max-w-xs lg:max-w-md ${
-                    message.senderId === authUser._id
-                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
-                      : "bg-white/80 text-gray-800 border border-gray-200/50 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-                  }`}
-                >
+              <div
+                    className={`w-auto px-4 py-3 m-2 rounded-2xl relative group max-w-xs lg:max-w-md ${
+                      message.senderId === authUser._id
+                        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                        : theme === "dark"
+                        ? "bg-gray-800 text-gray-100 border border-gray-700"
+                        : "bg-gray-100 text-gray-900 border border-gray-300"
+                    }`}
+                  >
+
                   {message.image && (
                     <div className="relative">
                       <img
@@ -534,7 +532,7 @@ const ChatContainer = () => {
           theme === "dark" ? "bg-gray-800" : "bg-gray-100"
         }`}
       >
-        <form onSubmit={handleSendMessage} className="flex items-end space-x-3">
+        <form onSubmit={handleSendMessage} className="flex items-end space-x-3  rounded-lg">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -545,7 +543,7 @@ const ChatContainer = () => {
           <input
             type="file"
             accept="image/*,video/*"
-            className="hidden"
+            className="hidden hover:bg-hover-surface"
             ref={fileInputRef}
             onChange={handleImageChange}
           />
@@ -561,7 +559,7 @@ const ChatContainer = () => {
                 }
               }}
               placeholder="Type a message..."
-              className={`w-full pr-12 px-4 py-3 border rounded-2xl resize-none focus:outline-none text-sm max-h-32 ${
+              className={`w-full pr-12 px-4 py-3 border border-border rounded-2xl resize-none focus:outline-none text-sm max-h-32 ${
                 theme === "dark"
                   ? "bg-gray-700 text-white border-gray-600"
                   : "bg-gray-50 text-gray-900 border-gray-200/50"

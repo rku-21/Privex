@@ -64,7 +64,7 @@ export const RequestReceived = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-bg text-text">
       <Navbar />
 
       
@@ -77,7 +77,7 @@ export const RequestReceived = () => {
               <Users className="h-8 w-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">No requests</h3>
-            <p className="text-gray-400">You don't have any friend requests right now.</p>
+            <p className="text-text">You don't have any friend requests right now.</p>
           </div>
         ) : (
           <div className="space-y-3 mt-4">

@@ -1,21 +1,17 @@
+// store/useThemeStore.js
 import { create } from "zustand";
 
-function applyTheme(theme) {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    document.body.classList.toggle("dark-mode", theme === "dark");
-}
-export const useThemeStore = create((set) => ({
-    theme: "dark", 
-    setTheme: (theme) => {
-       const forcedTheme = "dark";
-        localStorage.setItem("chat-theme", forcedTheme);
-        applyTheme(forcedTheme);
-        set({ theme: forcedTheme });
-    },
-    toggleTheme: () => {
-       
-        return;
-    },
+export const useThemeStore = create((set, get) => ({
+  theme: localStorage.getItem("theme") || "dark",
+
+  setTheme: (theme) => {
+    localStorage.setItem("theme", theme);
+    set({ theme });
+  },
+
+  toggleTheme: () => {
+    const newTheme = get().theme === "dark" ? "light" : "dark";
+    localStorage.setItem("theme", newTheme);
+    set({ theme: newTheme });
+  },
 }));
-localStorage.setItem("chat-theme", "dark");
-applyTheme("dark");

@@ -45,18 +45,18 @@ export const Friends = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-bg text-text">
       <Navbar/>
       
       <div className="max-w-6xl mx-auto px-4 pb-20">
         
         {!friendsPagination.isLoading && friends.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-bg rounded-full flex items-center justify-center mx-auto mb-4">
               <div className="text-4xl">👥</div>
             </div>
             <h3 className="text-lg font-semibold mb-2">No Friends Yet</h3>
-            <p className="text-gray-400">Start connecting with people!</p>
+            <p className="text-text">Start connecting with people!</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
@@ -64,7 +64,7 @@ export const Friends = () => {
               <div 
                 key={user._id} 
                 ref={index === friends.length - 1 ? lastFriendRef : null}
-                className="bg-gray-900/50 rounded-xl p-4 flex flex-col items-center hover:bg-gray-900 transition-all duration-200 border border-gray-800 hover:border-gray-700"
+                className="bg-bg rounded-xl p-4 flex flex-col items-center hover:bg-hover-surface transition-all duration-200  border-border hover:border-accent"
               >
                 <div className="relative mb-3">
                   <img
@@ -76,7 +76,7 @@ export const Friends = () => {
                 
                 <div className="text-center mb-3">
                   <div className="font-semibold text-sm truncate w-full">{user.fullname}</div>
-                  <div className="text-xs text-gray-400 truncate w-full">
+                  <div className="text-xs text-text truncate w-full">
                     @{user.username || "username"}
                   </div>
                 </div>

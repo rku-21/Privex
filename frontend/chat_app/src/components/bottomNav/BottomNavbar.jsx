@@ -27,21 +27,18 @@ const BottomNavbar = () => {
         flex items-center justify-between px-6
         ${selectedUser ? "hidden md:flex" : "flex"}
         
-        border-t border-white/10
+        border-t border-border
         z-[999]
-        ${
-          theme === "dark"
-            ? "bg-gray-900"
-            : "bg-gray-50"
-        }
+        bg-bg
+       
       `}
     >
-      <ul className="flex justify-between items-center w-full text-white">
+      <ul className="flex justify-between items-center w-full text-text">
         <li
           onClick={() => navigate("/")}
           className="text-2xl cursor-pointer transition-colors duration-200 hover:text-pink-400"
         >
-          <i className="fas fa-home"></i>
+          <i className="fas fa-home "></i>
         </li>
         <li
           onClick={() => navigate("/search")}

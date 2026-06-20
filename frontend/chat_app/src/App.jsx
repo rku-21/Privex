@@ -8,22 +8,28 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore.js";
 import IncomingCallNotification from "./components/notification/IncomingCallNotification.jsx";
 import { useEffect } from "react";
-import Search from "./routePages/Searchpage/search.jsx";
+import {Search} from "./routePages/Searchpage/search.jsx";
 import { RequestReceived } from "./routePages/RequestPage/requestReceived.jsx";
 import { Friends } from "./routePages/friendsPage/Friends.jsx";
 import { Contact } from "./routePages/Contact.jsx";
 import UnderConstruction from "./components/Construction/Construction.jsx";
 import OutgoingCallModal from "./components/notification/OutgoingCallModal.jsx";
 import ActiveCallModal from "./components/notification/ActiveCallModal.jsx";
+import { useThemeStore } from "./store/useThemeStore.js";
 
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const {theme} =useThemeStore();
 
   useEffect(() => {
     checkAuth();
     keepServerAwake();
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark-mode", theme === "dark");
+  }, [theme]);
   
   const keepServerAwake = () => {
     setInterval(() => {

@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
-  darkMode: 'class', 
+ darkMode: ['selector', '.dark-mode'], 
   theme: {
     extend: {
       animation: {
@@ -18,6 +18,17 @@ export default {
           '70%': { transform: 'scale(1.05)', opacity: '0.7', boxShadow: '0 0 0 15px rgba(59, 130, 246, 0)' },
           '100%': { transform: 'scale(1)', opacity: '1', boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)' }
         }
+      },
+      colors:{
+        bg:'var(--color-bg)',
+        surface:'var(--color-surface)',
+        text: 'var(--color-text)',
+        muted: 'var(--color-muted)',
+        border: 'var(--color-border)',
+        'avatar-bg': 'var(--color-avatar-bg)',
+        'hover-surface':'var(--color-hover)',
+        accent: 'var(--color-accent)',
+        'toggle-off':'var(--color-toggle-off)',
       }
     },
   },

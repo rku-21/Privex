@@ -73,20 +73,20 @@ export const Sidebar = () => {
     <div
       className={`
         ${selectedUser ? "hidden md:flex" : "flex"}
-        flex-col h-full w-full md:w-80 lg:w-96 bg-gray-900 border-r border-gray-700
+        flex-col h-full w-full md:w-80 lg:w-96 bg-bg border-r border-border
         ${selectedUser ? "sidebar-no-small-screen" : ""}
       `}
     >
       
-      <div className="p-3 bg-gray-900">
-        <div className="bg-gray-800 rounded-lg flex items-center px-3 py-2">
-          <Search size={16} className="text-gray-400 mr-3" />
+      <div className="p-3 bg-bg border-border">
+        <div className="bg-bg rounded-lg flex items-center px-3 py-2 border border-border">
+          <Search size={16} className="text-text mr-3" />
           <input
             type="text"
             placeholder="Search users"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent text-white placeholder-gray-400 outline-none flex-1"
+            className="bg-transparent text-text placeholder-gray-500 outline-none flex-1 border-border"
           />
         </div>
       </div>
@@ -107,14 +107,14 @@ export const Sidebar = () => {
                   ? "Online"
                   : "Offline";
           const statusColorClass =
-            statusText === "Offline" ? "text-gray-400" : "text-green-500";
+            statusText === "Offline" ? "text-text" : "text-green-500";
 
           return (
             <div
               key={user._id}
               ref={isLastItem ? lastFriendRef : null}
               onClick={() => setselectedUser(user)}
-              className={`flex items-center justify-between p-3 cursor-pointer transition-colors duration-200 border-b border-gray-800 border-opacity-30 hover:bg-gray-800 ${isActive ? "bg-gray-700" : ""
+              className={`flex items-center justify-between p-3 cursor-pointer transition-colors duration-200 border-b border-border border-opacity-30 hover:bg-hover-surface ${isActive ? "bg-bg" : ""
                 }`}
             >
 
@@ -126,11 +126,11 @@ export const Sidebar = () => {
                     className="w-12 h-12 rounded-full object-cover"
                   />
                   {isOnline && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-border"></div>
                   )}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-white font-normal truncate">{user.fullname}</h3>
+                  <h3 className="text-text font-normal truncate">{user.fullname}</h3>
                   <p className={`${statusColorClass} text-sm truncate mt-1`}>
                     {statusText}
                   </p>
@@ -148,7 +148,7 @@ export const Sidebar = () => {
         })}
 
         {filteredUsers.length === 0 && !isUsersLoding && (
-          <div className="text-center text-gray-500 py-4">No users found</div>
+          <div className="text-center text-text py-4">No users found</div>
         )}
 
 

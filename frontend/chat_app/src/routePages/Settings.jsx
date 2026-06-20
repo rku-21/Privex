@@ -3,162 +3,231 @@ import { ChevronRight, User, Bell, Lock, HelpCircle, Heart, Users, Archive, Star
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
-
 export default function ChatSettings() {
-  const Navigate=useNavigate();
-  const {authUser,}=useAuthStore();
-  const [darkMode, setDarkMode] = useState(false);
+  const Navigate = useNavigate();
+  const { authUser } = useAuthStore();
   const [notifications, setNotifications] = useState(true);
-  const {theme}=useThemeStore();
-  
-  const SettingsItem = ({ icon: Icon, title, subtitle, onClick, hasToggle, toggleValue, onToggle, hasChevron = true }) => (
-    <div 
-      className={`flex items-center p-4 border-b border-gray-100 ${theme ? 'border-gray-700 bg-gray-800' : 'bg-white'} ${onClick ? 'cursor-pointer hover:bg-gray-50' : ''} ${darkMode && onClick ? 'hover:bg-gray-700' : ''}`}
-      onClick={onClick}
-    >
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${theme ? 'bg-gray-700' : 'bg-gray-100'}`}>
-        <Icon className={`w-5 h-5 ${theme ? 'text-gray-300' : 'text-gray-600'}`} />
-      </div>
-      <div className="flex-1">
-        <div className={`font-medium ${theme ? 'text-white' : 'text-gray-900'}`}>{title}</div>
-        {subtitle && <div className={`text-sm ${theme? 'text-gray-400' : 'text-gray-500'}`}>{subtitle}</div>}
-      </div>
-      {hasToggle && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle(!toggleValue);
-          }}
-          className={`w-12 h-6 rounded-full transition-colors duration-200 ${
-            toggleValue ? 'bg-green-500' : theme ? 'bg-gray-600' : 'bg-gray-300'
-          }`}
-        >
-          <div
-            className={`w-5 h-5 bg-white rounded-full transition-transform duration-200 ${
-              toggleValue ? 'translate-x-6' : 'translate-x-0.5'
-            }`}
-          />
-        </button>
-      )}
-      {hasChevron && !hasToggle && (
-        <ChevronRight className={`w-5 h-5 ${theme ? 'text-gray-400' : 'text-gray-400'}`} />
-      )}
-    </div>
-  );
+  const { theme, toggleTheme } = useThemeStore();
 
-  const SectionHeader = ({ title }) => (
-    <div className={`px-4 py-2 ${theme ? 'bg-gray-900 text-gray-400' : 'bg-gray-50 text-gray-600'} text-sm font-medium uppercase tracking-wide`}>
-      {title}
-    </div>
-  );
+return (
+    <div className="min-h-screen bg-bg">
 
-  return (
-    <div className={`min-h-screen ${theme ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      
-      <div className={`sticky top-0 z-10 ${theme ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b`}>
+      {/* {/*Top header bar } */}
+      <div className="sticky top-0 z-10 bg-bg border-b border-border">
         <div className="flex items-center p-4">
-
-          <button className={`mr-4 p-1 ${theme ? 'text-white' : 'text-gray-900'}`}
-          onClick={()=>window.history.back()}>
+          <button className="mr-4 p-1 text-text" onClick={() => window.history.back()}>
             <ChevronRight className="w-6 h-6 rotate-180" />
           </button>
-
-          <h1 className={`text-xl font-semibold ${theme ? 'text-white' : 'text-gray-900'}`}>Settings</h1>
+          <h1 className="text-xl font-semibold text-text">Settings</h1>
         </div>
       </div>
 
-      
-      <div className={`${theme ? 'bg-gray-800' : 'bg-white'} border-b ${theme ? 'border-gray-700' : 'border-gray-200'}`}>
+      {/* Profile card  */}
+      <div className="bg-surface border-b border-border">
         <div className="flex items-center p-4">
           <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mr-4">
-           <img className='w-16 h-16 rounded-full object-cover'
-            onClick={()=> Navigate('/profile')}
-              src={authUser?.profilePicture?authUser?.profilePicture:"avatar.png"}>  
-            </img>
+            <img
+              className="w-16 h-16 rounded-full object-cover"
+              onClick={() => Navigate('/profile')}
+              src={authUser?.profilePicture ? authUser.profilePicture : "avatar.png"}
+            />
           </div>
           <div className="flex-1">
-            <div className={`text-lg font-semibold ${theme ? 'text-white' : 'text-gray-900'}`}>
-              
-            </div>
-            <div className={`${theme ? 'text-gray-400' : 'text-gray-500'}`}>Hey there! I am using Privex</div>
+            <div className="text-lg font-semibold text-text"></div>
+            <div className="text-muted">Hey there! I am using Privex</div>
           </div>
-          <ChevronRight className={`w-5 h-5 ${theme ? 'text-gray-400' : 'text-gray-400'}`} />
+          <ChevronRight className="w-5 h-5 text-muted" onClick={() => Navigate('/profile')} />
         </div>
       </div>
 
-      
       <div className="space-y-0">
-        <SectionHeader title="Account" />
-        <SettingsItem 
-          icon={Lock} 
-          title="Privacy" 
-          subtitle="Last seen, profile photo, about"
+
+        {/*  Section: Account */}
+        <div className="px-4 py-2 bg-surface text-muted text-sm font-medium uppercase tracking-wide">
+          Account
+        </div>
+
+        {/* Privacy */}
+        <div
+          className="flex items-center p-4 border-b border-border bg-bg cursor-pointer hover:bg-hover-surface"
           onClick={() => console.log('Privacy clicked')}
-        />
-        <SettingsItem 
-          icon={Lock} 
-          title="Security" 
-          subtitle="Two-step verification, change number"
+        >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface hover:bg-hover-surface">
+            <Lock className="w-5 h-5 text-muted" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Privacy</div>
+            <div className="text-sm text-muted">Last seen, profile photo, about</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted" />
+        </div>
+
+        {/* Security */}
+        <div
+          className="flex items-center p-4 border-b border-border bg-bg cursor-pointer hover:bg-hover-surface"
           onClick={() => console.log('Security clicked')}
-        />
+        >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface hover:bg-hover-surface">
+            <Lock className="w-5 h-5 text-muted" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Security</div>
+            <div className="text-sm text-muted">Two-step verification, change number</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted" />
+        </div>
 
-        <SectionHeader title="Preferences" />
-        <SettingsItem 
-          icon={theme==='dark' ? Moon : Sun} 
-          title="Dark Mode" 
-          subtitle="Switch between light and dark themes"
-          hasToggle={true}
-          toggleValue={theme ==='dark'}
-          onToggle={useThemeStore.getState().toggleTheme}
-          hasChevron={false}
-        />
-        <SettingsItem 
-          icon={Bell} 
-          title="Notifications" 
-          subtitle="Message, group & call tones"
-          hasToggle={true}
-          toggleValue={notifications}
-          onToggle={setNotifications}
-          hasChevron={false}
-        />
-        <SettingsItem 
-          icon={Download} 
-          title="Storage and data" 
-          subtitle="Network usage, auto-download"
+        {/* Preferences  */}
+        <div className="px-4 py-2 bg-surface text-muted text-sm font-medium uppercase tracking-wide">
+          Preferences
+        </div>
+
+        {/* Dark Mode toggle */}
+        <div className="flex items-center p-4 border-b border-border bg-bg hover:bg-hover-surface">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface">
+            {theme === 'dark' ? (
+              <Moon className="w-5 h-5 text-muted" />
+            ) : (
+              <Sun className="w-5 h-5 text-muted" />
+            )}
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Dark Mode</div>
+            <div className="text-sm text-muted">Switch between light and dark themes</div>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleTheme();
+            }}
+            className={`w-12 h-6 rounded-full  transition-colors border border-border duration-200 ${
+              theme === 'dark' ? 'bg-emerald-500' : 'bg-toggle-off'
+            }`}
+          >
+            <div
+              className={`w-5 h-5  ${theme=='dark'?'bg-white':'bg-gray-600'} rounded-full transition-transform duration-200 ${
+                theme === 'dark' ? 'translate-x-6' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Notifications toggle */}
+        <div className="flex items-center p-4 border-b border-border bg-bg hover:bg-hover-surface">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface">
+            <Bell className="w-5 h-5 text-muted" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Notifications</div>
+            <div className="text-sm text-muted">Message, group & call tones</div>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setNotifications(!notifications);
+            }}
+            className={`w-12 h-6 rounded-full  transition-colors border border-border duration-200 ${
+              notifications ? 'bg-green-500' : 'bg-toggle-off'
+            }`}
+          >
+            <div
+              className={`w-5 h-5 ${theme=='dark'?'bg-white':'bg-gray-600'} rounded-full transition-transform duration-200 ${
+                notifications ? 'translate-x-6' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Storage and data */}
+        <div
+          className="flex items-center p-4 border-b border-border bg-bg cursor-pointer hover:bg-hover-surface"
           onClick={() => console.log('Storage clicked')}
-        />
+        >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface hover:bg-hover-surface">
+            <Download className="w-5 h-5 text-muted" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Storage and data</div>
+            <div className="text-sm text-muted">Network usage, auto-download</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted" />
+        </div>
 
-        <SectionHeader title="Chats" />
-        <SettingsItem 
-          icon={Archive} 
-          title="Chat backup" 
-          subtitle="Back up to Google Drive"
+        {/* ---------- Section: Chats ---------- */}
+        <div className="px-4 py-2 bg-surface text-muted text-sm font-medium uppercase tracking-wide">
+          Chats
+        </div>
+
+        {/* Chat backup */}
+        <div
+          className="flex items-center p-4 border-b border-border bg-bg cursor-pointer hover:bg-hover-surface"
           onClick={() => console.log('Backup clicked')}
-        />
-        <SettingsItem 
-          icon={Star} 
-          title="Starred messages" 
-          subtitle="View your starred messages"
-          onClick={() => console.log('Starred clicked')}
-        />
+        >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface hover:bg-hover-surface">
+            <Archive className="w-5 h-5 text-muted" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Chat backup</div>
+            <div className="text-sm text-muted">Back up to Google Drive</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted" />
+        </div>
 
-        <SectionHeader title="More" />
-        <SettingsItem 
-          icon={Users} 
-          title="Invite friends" 
-          subtitle="Share ChatApp with friends"
+        {/* Starred messages */}
+        <div
+          className="flex items-center p-4 border-b border-border bg-bg cursor-pointer hover:bg-hover-surface"
+          onClick={() => console.log('Starred clicked')}
+        >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface hover:bg-hover-surface">
+            <Star className="w-5 h-5 text-muted" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Starred messages</div>
+            <div className="text-sm text-muted">View your starred messages</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted" />
+        </div>
+
+        {/* ---------- Section: More ---------- */}
+        <div className="px-4 py-2 bg-surface text-muted text-sm font-medium uppercase tracking-wide">
+          More
+        </div>
+
+        {/* Invite friends */}
+        <div
+          className="flex items-center p-4 border-b border-border bg-bg cursor-pointer hover:bg-hover-surface"
           onClick={() => console.log('Invite clicked')}
-        />
-        <SettingsItem 
-          icon={HelpCircle} 
-          title="Help" 
-          subtitle="Help center, contact us, privacy policy"
+        >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface hover:bg-hover-surface">
+            <Users className="w-5 h-5 text-muted" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Invite friends</div>
+            <div className="text-sm text-muted">Share ChatApp with friends</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted" />
+        </div>
+
+        {/* Help */}
+        <div
+          className="flex items-center p-4 border-b border-border bg-bg cursor-pointer hover:bg-hover-surface"
           onClick={() => console.log('Help clicked')}
-        />
+        >
+          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-surface hover:bg-hover-surface">
+            <HelpCircle className="w-5 h-5 text-muted" />
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-text">Help</div>
+            <div className="text-sm text-muted">Help center, contact us, privacy policy</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted" />
+        </div>
       </div>
-      <div className={`p-6 text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'} text-sm`}>
-        <div>ChatApp v2.24.1</div>
-        <div className="mt-2">Made with <Heart className="w-4 h-4 inline text-red-500" /> by Your Team</div>
+
+      {/* ---------- Footer ---------- */}
+      <div className="p-6 text-center text-muted text-sm">
+        <div>ChatApp v1.00.0</div>
+        <div className="mt-2">Made with rku21</div>
       </div>
     </div>
   );
