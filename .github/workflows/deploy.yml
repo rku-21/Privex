@@ -37,7 +37,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/privex
+            cd ~/Privex
             git pull origin main
             cd backend && npm install --production && cd ..
             cd frontend/chat_app && npm install && npm run build && cd ../..
